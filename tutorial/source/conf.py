@@ -63,8 +63,8 @@ nbsphinx_allow_errors = True
 master_doc = 'index'
 
 # General information about the project.
-project = u'Pyro Tutorials'
-copyright = u'2017-2018, Uber Technologies, Inc'
+project = u'Pyro Tutorials 编译'
+copyright = u'Uber Technologies, Inc; 编译 by Heyang Gong'
 author = u'Uber AI Labs'
 
 # The version info for the project you're documenting, acts as replacement for
