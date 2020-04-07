@@ -1,0 +1,891 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>SVI Part I: 随机变分推断基础 &mdash; Pyro Tutorials 编译 1.3.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/pyro.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="SVI Part II: 条件独立, 子采样和 Amortization" href="svi_part_ii.html" />
+    <link rel="prev" title="Pyro 推断简介" href="intro_part_ii.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html">
+          
+
+          
+            
+            <img src="_static/pyro_logo_wide.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.3.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Introduction:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro_part_i.html">Pyro 模型介绍</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro_part_ii.html">Pyro 推断简介</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">SVI Part I: 随机变分推断基础</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#随机变分推断数学背景">随机变分推断数学背景</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#近似后验的guide">近似后验的guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#目标函数ELBO">目标函数ELBO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#SVI-类"><code class="docutils literal notranslate"><span class="pre">SVI</span></code> 类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#optimizers">optimizers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#端对端例子">端对端例子</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#参考文献">参考文献</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="svi_part_ii.html">SVI Part II: 条件独立, 子采样和 Amortization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="svi_part_iii.html">SVI Part III: ELBO 梯度估计</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中模型和数据维度</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Advanced:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="enumeration.html">Inference with 离散潜变量</a></li>
+<li class="toctree-l1"><a class="reference internal" href="custom_objectives.html">自定义 SVI 目标函数</a></li>
+<li class="toctree-l1"><a class="reference internal" href="jit.html">Pyro 模型中使用 PyTorch JIT Compiler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="minipyro.html">Mini-Pyro</a></li>
+<li class="toctree-l1"><a class="reference internal" href="effect_handlers.html">Poutine: Pyro 中使用 Effect Handlers 编程手册</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Examples:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="vae.html">变分自编码器</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bayesian_regression.html">贝叶斯回归-介绍(Part 1)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bayesian_regression_ii.html">贝叶斯回归-推断算法(Part 2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dmm.html">深马尔可夫模型</a></li>
+<li class="toctree-l1"><a class="reference internal" href="air.html">Attend Infer Repeat</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ss-vae.html">半监督 VAE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stable.html">随机波动率的 Levy 稳定分布模型</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Contributed:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="gmm.html">高斯混合模型</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gp.html">高斯过程</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gplvm.html">高斯过程潜变量模型</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bo.html">贝叶斯优化</a></li>
+<li class="toctree-l1"><a class="reference internal" href="easyguide.html">用 EasyGuide 构建 guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="forecasting_i.html">Forecasting I: univariate, heavy tailed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="forecasting_ii.html">Forecasting II: 状态空间模型</a></li>
+<li class="toctree-l1"><a class="reference internal" href="forecasting_iii.html">Forecasting III: 层级模型</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tracking_1d.html">跟踪未知数量的对象</a></li>
+<li class="toctree-l1"><a class="reference internal" href="csis.html">Compiled Sequential 重要采样</a></li>
+<li class="toctree-l1"><a class="reference internal" href="RSA-implicature.html">理性言论行动框架</a></li>
+<li class="toctree-l1"><a class="reference internal" href="RSA-hyperbole.html">用 RSA 理解 Hyperbole</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ekf.html">卡尔曼滤子</a></li>
+<li class="toctree-l1"><a class="reference internal" href="working_memory.html">设计自适应实验以研究工作记忆</a></li>
+<li class="toctree-l1"><a class="reference internal" href="elections.html">贝叶斯最优实验设计预测美国总统选举</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dirichlet_process_mixture.html">Dirichlet 过程混合模型</a></li>
+<li class="toctree-l1"><a class="reference internal" href="boosting_bbvi.html">Boosting 黑盒变分推断</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Code Examples:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="capture_recapture.html">Capture-Recapture Models (CJS Models)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cevae.html">因果VAE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hmm.html">隐马尔可夫模型</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lda.html">LDA主题模型</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mcmc.html">Markov Chain Monte Carlo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="neutra.html">NeuTraReparam</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sparse_gamma.html">稀疏 Gamma 深度指数族分布</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dkl.html">Deep Kernel Learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="einsum.html">Plated Einsum</a></li>
+<li class="toctree-l1"><a class="reference internal" href="forecast_simple.html">多元预测</a></li>
+<li class="toctree-l1"><a class="reference internal" href="timeseries.html">高斯过程时间序列模型</a></li>
+<li class="toctree-l1"><a class="reference internal" href="smcfilter.html">序贯蒙特卡洛滤波</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Pyro Tutorials 编译</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>SVI Part I: 随机变分推断基础</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/svi_part_i.ipynb.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container,
+div.nbinput.container div.prompt,
+div.nbinput.container div.input_area,
+div.nbinput.container div[class*=highlight],
+div.nbinput.container div[class*=highlight] pre,
+div.nboutput.container,
+div.nboutput.container div.prompt,
+div.nboutput.container div.output_area,
+div.nboutput.container div[class*=highlight],
+div.nboutput.container div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    min-width: 5ex;
+    padding-top: 0.3rem;
+    padding-right: 0.3rem;
+    text-align: right;
+    flex: 0;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    background: #f5f5f5;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 0.3rem;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="SVI-Part-I:-随机变分推断基础">
+<h1>SVI Part I: 随机变分推断基础<a class="headerlink" href="#SVI-Part-I:-随机变分推断基础" title="Permalink to this headline">¶</a></h1>
+<p>Pyro在设计时特别注意支持随机变分推断作为通用推断算法。让我们看看我们使用Pyro进行变分推断。</p>
+<p><strong>Table of Contents</strong></p>
+<ul class="simple">
+<li><p><a class="reference external" href="#SVI数学基础">SVI数学基础</a></p></li>
+<li><p><a class="reference external" href="#近似后验的guide">近似后验的guide</a></p></li>
+<li><p><a class="reference external" href="#目标函数ELBO">目标函数ELBO</a></p></li>
+<li><p><a class="reference external" href="#SVI-类">SVI Class</a></p></li>
+<li><p><a class="reference external" href="#optimizers">优化器</a></p></li>
+<li><p><a class="reference external" href="#端对端例子">端对端例子</a></p></li>
+</ul>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Hint for the rest of this tutorial</span>
+<span class="c1"># 完成本章学习之后，您将理解如下的程序</span>
+<span class="kn">import</span> <span class="nn">math</span><span class="o">,</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">torch</span><span class="o">,</span> <span class="nn">pyro</span>
+<span class="kn">import</span> <span class="nn">torch.distributions.constraints</span> <span class="k">as</span> <span class="nn">constraints</span>
+<span class="kn">import</span> <span class="nn">pyro.distributions</span> <span class="k">as</span> <span class="nn">dist</span>
+<span class="kn">from</span> <span class="nn">pyro.optim</span> <span class="k">import</span> <span class="n">Adam</span>
+<span class="kn">from</span> <span class="nn">pyro.infer</span> <span class="k">import</span> <span class="n">SVI</span><span class="p">,</span> <span class="n">Trace_ELBO</span>
+
+<span class="k">assert</span> <span class="n">pyro</span><span class="o">.</span><span class="n">__version__</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;1.3.0&#39;</span><span class="p">)</span>
+<span class="n">pyro</span><span class="o">.</span><span class="n">enable_validation</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">pyro</span><span class="o">.</span><span class="n">clear_param_store</span><span class="p">()</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">data</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">)])</span>
+<span class="n">data</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)])</span>
+
+<span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="n">alpha0</span><span class="p">,</span> <span class="n">beta0</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">10.0</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">10.0</span><span class="p">)</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;latent_fairness&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Beta</span><span class="p">(</span><span class="n">alpha0</span><span class="p">,</span> <span class="n">beta0</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
+        <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;obs_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">guide</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="n">alpha_q</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;alpha_q&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">15.0</span><span class="p">),</span> <span class="n">constraint</span><span class="o">=</span><span class="n">constraints</span><span class="o">.</span><span class="n">positive</span><span class="p">)</span>
+    <span class="n">beta_q</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;beta_q&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">15.0</span><span class="p">),</span> <span class="n">constraint</span><span class="o">=</span><span class="n">constraints</span><span class="o">.</span><span class="n">positive</span><span class="p">)</span>
+    <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;latent_fairness&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Beta</span><span class="p">(</span><span class="n">alpha_q</span><span class="p">,</span> <span class="n">beta_q</span><span class="p">))</span>
+
+<span class="n">adam_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">0.0005</span><span class="p">,</span> <span class="s2">&quot;betas&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.90</span><span class="p">,</span> <span class="mf">0.999</span><span class="p">)}</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">Adam</span><span class="p">(</span><span class="n">adam_params</span><span class="p">)</span>
+
+<span class="n">svi</span> <span class="o">=</span> <span class="n">SVI</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">guide</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="o">=</span><span class="n">Trace_ELBO</span><span class="p">())</span>
+
+<span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_steps</span><span class="p">):</span>
+    <span class="n">svi</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">step</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+<span class="n">alpha_q</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;alpha_q&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<span class="n">beta_q</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;beta_q&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<span class="n">inferred_mean</span> <span class="o">=</span> <span class="n">alpha_q</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha_q</span> <span class="o">+</span> <span class="n">beta_q</span><span class="p">)</span>
+<span class="n">factor</span> <span class="o">=</span> <span class="n">beta_q</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha_q</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">alpha_q</span> <span class="o">+</span> <span class="n">beta_q</span><span class="p">))</span>
+<span class="n">inferred_std</span> <span class="o">=</span> <span class="n">inferred_mean</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">factor</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">based on the data and our prior belief, the fairness &quot;</span> <span class="o">+</span>
+      <span class="s2">&quot;of the coin is </span><span class="si">%.3f</span><span class="s2"> +- </span><span class="si">%.3f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">inferred_mean</span><span class="p">,</span> <span class="n">inferred_std</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+....................
+based on the data and our prior belief, the fairness of the coin is 0.531 +- 0.090
+</pre></div></div>
+</div>
+<div class="section" id="随机变分推断数学背景">
+<h2>随机变分推断数学背景<a class="headerlink" href="#随机变分推断数学背景" title="Permalink to this headline">¶</a></h2>
+<p>我们将假设我们已经在Pyro中定义了模型（有关如何完成此操作的更多详细信息，请参见 <a class="reference internal" href="intro_part_i.html"><span class="doc">Intro Part I</span></a>）。简单回顾一下，模型就是一个带参数的随机函数 <code class="docutils literal notranslate"><span class="pre">model(*args,</span> <span class="pre">**kwargs)</span></code>. 模型的每个部分都对应于某个 Pyro 语句:</p>
+<ol class="arabic simple">
+<li><p>观测变量 <span class="math notranslate nohighlight">\(\Longleftrightarrow\)</span> <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> with the <code class="docutils literal notranslate"><span class="pre">obs</span></code> argument</p></li>
+<li><p>潜变量 <span class="math notranslate nohighlight">\(\Longleftrightarrow\)</span> <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code></p></li>
+<li><p>模型参数 <span class="math notranslate nohighlight">\(\Longleftrightarrow\)</span> <code class="docutils literal notranslate"><span class="pre">pyro.param</span></code></p></li>
+</ol>
+<p>我们来看看变分推断背后的数学形式。 一个模型有观测变量 <span class="math notranslate nohighlight">\({\bf x}\)</span>, 潜变量 <span class="math notranslate nohighlight">\({\bf z}\)</span> 和参数 <span class="math notranslate nohighlight">\(\theta\)</span>. 联合概率密度如下：</p>
+<div class="math notranslate nohighlight">
+\[p_{\theta}({\bf x}, {\bf z}) = p_{\theta}({\bf x}|{\bf z}) p_{\theta}({\bf z})\]</div>
+<p>我们假定组成 <span class="math notranslate nohighlight">\(p_{\theta}({\bf x}, {\bf z})\)</span> 的每个概率分布 <span class="math notranslate nohighlight">\(p_i\)</span> 具备以下的性质：</p>
+<ol class="arabic simple">
+<li><p>可以直接对它抽样</p></li>
+<li><p>可以计算某点处的概率密度</p></li>
+<li><p>关于模型参数 <span class="math notranslate nohighlight">\(\theta\)</span> 可微</p></li>
+</ol>
+<blockquote>
+<div><p>一个直接的问题是：如何学习模型 <span class="math notranslate nohighlight">\(p_{\theta}({\bf x}, {\bf z})\)</span>?</p>
+</div></blockquote>
+<p>在这种情况下，我们通过最大化对数证据(log evidence) 这个标准来学习一个好的模型, i.e. we want to find the value of <span class="math notranslate nohighlight">\(\theta\)</span> given by</p>
+<div class="math notranslate nohighlight">
+\[\theta_{\rm{max}} = \underset{\theta}{\operatorname{argmax}} \log p_{\theta}({\bf x})\]</div>
+<p>其中对数证据 <span class="math notranslate nohighlight">\(\log p_{\theta}({\bf x})\)</span> 满足：</p>
+<div class="math notranslate nohighlight">
+\[\log p_{\theta}({\bf x}) = \log \int_{\bf z}\! \; p_{\theta}({\bf x}, {\bf z}) d{\bf z}\]</div>
+<p>在一般情况下，这是一个 doubly difficult problem. 这是因为(even for a fixed <span class="math notranslate nohighlight">\(\theta\)</span>) 对潜变量 <span class="math notranslate nohighlight">\(\bf z\)</span> 上的积分通常难以计算的。此外，即使我们知道如何计算所有 <span class="math notranslate nohighlight">\(\theta\)</span> 值的对数证据，也就是说对数证据是一个以参数 <span class="math notranslate nohighlight">\(\theta\)</span> 为自变量的函数，最大化它通常将是一个困难的非凸优化问题。</p>
+<p>除了找到 <span class="math notranslate nohighlight">\(\theta_{\rm{max}}\)</span> 之外，我们还要计算潜变量 <span class="math notranslate nohighlight">\(\bf z\)</span> 的后验分布：</p>
+<div class="math notranslate nohighlight">
+\[ p_{\theta_{\rm{max}}}({\bf z} | {\bf x}) = \frac{p_{\theta_{\rm{max}}}({\bf x} , {\bf z})}{
+\int_{\bf z} \! \; p_{\theta_{\rm{max}}}({\bf x} , {\bf z})d{\bf z} }\]</div>
+<p>请注意，此表达式的分母 is the evidence(通常不可计算). 变分推断提供一种方案用于求解<span class="math notranslate nohighlight">\(\theta_{\rm{max}}\)</span> 和计算一个近似后验分布 <span class="math notranslate nohighlight">\(p_{\theta_{\rm{max}}}({\bf z} | {\bf x})\)</span>.</p>
+<p>总的来说，我们使用极大思然估计去求的 <span class="math notranslate nohighlight">\(\theta_{max}\)</span> 的思路会遇到很多麻烦。变分推断的目的是一方面估计出来联合分布的参数(也就是模型参数，得到生成模型)，另外一个方面是得到后验。</p>
+</div>
+<div class="section" id="近似后验的guide">
+<h2>近似后验的guide<a class="headerlink" href="#近似后验的guide" title="Permalink to this headline">¶</a></h2>
+<p>基本的想法是用一个带参指导分布 <span class="math notranslate nohighlight">\(q_\phi(z)\)</span> (<span class="math notranslate nohighlight">\(\phi\)</span> 被叫做变分参数) 来近似真实后验分布 <span class="math notranslate nohighlight">\(p_\theta(z|x)\)</span>, 其中 <span class="math notranslate nohighlight">\(q\)</span> 被称作变分分布 (variational distribution) 。</p>
+<p>指导分布 <code class="docutils literal notranslate"><span class="pre">guide()</span></code> 和模型分布一样, 它是一个包含 <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> 和 <code class="docutils literal notranslate"><span class="pre">pyro.param</span></code> 语句的随机函数. 但是指导分布不包含任何观测数据, since the guide needs to be a properly normalized distribution. 注意在 Pyro 中，两个可调用对象 <code class="docutils literal notranslate"><span class="pre">model()</span></code> 和 <code class="docutils literal notranslate"><span class="pre">guide()</span></code> 必须具有相同的输入参数。</p>
+<p>因为指导分布是潜变量后验分布 <span class="math notranslate nohighlight">\(p_{\theta_{\rm{max}}}({\bf z} | {\bf x})\)</span> 的近似, 那么指导分布 <code class="docutils literal notranslate"><span class="pre">guide()</span></code> 需要提供模型中所有潜变量的有效联合概率密度。 模型分布和指导分布中抽样语句 <code class="docutils literal notranslate"><span class="pre">pyro.sample()</span></code> 的变量名字必须对齐。 确切地说，如果 <code class="docutils literal notranslate"><span class="pre">model()</span></code> 包含随机变量 <code class="docutils literal notranslate"><span class="pre">z_1</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">model</span><span class="p">():</span>
+    <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;z_1&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>那么 guide 具备有对应的 <code class="docutils literal notranslate"><span class="pre">sample</span></code> statement</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">guide</span><span class="p">():</span>
+    <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;z_1&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>两种情况下使用的分布可以不同，但是名称必须一一对应。</p>
+<p>一旦指定了指导分布 <code class="docutils literal notranslate"><span class="pre">guide()</span></code> （我们在下面提供了一些明确的示例），我们就可以进行推断了。学习将就是一个优化问题 where each iteration of training takes a step in <span class="math notranslate nohighlight">\(\theta-\phi\)</span> space that moves the guide closer to the exact posterior. 为此，我们需要定义适当的目标函数。</p>
+<p><strong>注</strong>：</p>
+<ul class="simple">
+<li><p>因为 <code class="docutils literal notranslate"><span class="pre">model</span> <span class="pre">=</span> <span class="pre">primitive</span> <span class="pre">r.v.(观测变量</span> <span class="pre">+</span> <span class="pre">潜变量)</span> <span class="pre">+</span> <span class="pre">deterministic</span> <span class="pre">function</span></code> 是一个具备观测变量的分布, 而 <code class="docutils literal notranslate"><span class="pre">guide</span></code> 就近似的分布是此公式中潜变量给定观测变量的后验分布。</p></li>
+<li><p>在变分自编码器中，用来近似后验分布的 <code class="docutils literal notranslate"><span class="pre">guide</span></code> <span class="math notranslate nohighlight">\(q_\phi(z)\)</span> 是局部的，意味着对一个每个样本 <span class="math notranslate nohighlight">\(x_i\)</span>, <code class="docutils literal notranslate"><span class="pre">latent</span> <span class="pre">r.v.</span></code> 的后验分布 <span class="math notranslate nohighlight">\(q_\phi(z|x_i)\)</span> 都不相同，我们需要学习与样本个数相同数量的后验分布。</p></li>
+</ul>
+</div>
+<div class="section" id="目标函数ELBO">
+<h2>目标函数ELBO<a class="headerlink" href="#目标函数ELBO" title="Permalink to this headline">¶</a></h2>
+<p>(定义目标函数) A simple derivation (for example see reference [1]) yields what we’re after: the evidence lower bound (ELBO). The ELBO, which is a function of both <span class="math notranslate nohighlight">\(\theta\)</span> and <span class="math notranslate nohighlight">\(\phi\)</span>, is defined as an expectation w.r.t. to samples from the guide:</p>
+<div class="math notranslate nohighlight">
+\[{\rm ELBO} \equiv \mathbb{E}_{q_{\phi}({\bf z})} \left [
+\log p_{\theta}({\bf x}, {\bf z}) - \log q_{\phi}({\bf z})
+\right]\]</div>
+<p>根据假设我们可以计算上式中期望内部对数概率 (也就是 <span class="math notranslate nohighlight">\(\log p_{\theta}({\bf x}, {\bf z})\)</span> 和 <span class="math notranslate nohighlight">\(\log q_{\phi}({\bf z})\)</span>). 因为指导分布是一个可以从中采样的参数分布, 所以我们可以计算 ELBO 的蒙特卡洛估计. 至关重要的是 ELBO 为对数证据的下限，即对于所有的 <span class="math notranslate nohighlight">\(\theta\)</span> 和 <span class="math notranslate nohighlight">\(\phi\)</span>，我们都有</p>
+<div class="math notranslate nohighlight">
+\[\log p_{\theta}({\bf x}) \ge {\rm ELBO}\]</div>
+<p>因此，如果我们采取(stochastic) gradient steps 最大化 ELBO，那么我们也会 pushing the log evidence higher (in expectation). 此外，可以证明ELBO 和对数证据之间的差就是 <code class="docutils literal notranslate"><span class="pre">guide</span></code> 和潜变量后验分布之间的KL散度：</p>
+<div class="math notranslate nohighlight">
+\[ \log p_{\theta}({\bf x}) - {\rm ELBO} =
+\rm{KL}\!\left( q_{\phi}({\bf z}) \lVert p_{\theta}({\bf z} | {\bf x}) \right)\]</div>
+<p>KL 散度是两个分布之间 “相似性” 的一个非负度量。所以对每个固定的 <span class="math notranslate nohighlight">\(\theta\)</span>, as we take steps in <span class="math notranslate nohighlight">\(\phi\)</span> space that increase the ELBO, we decrease the KL divergence between the guide and the posterior, 也就是说，我们让 <code class="docutils literal notranslate"><span class="pre">guide</span></code> 更加接近后验分布了。 而不固定的 <span class="math notranslate nohighlight">\(\theta\)</span>时， we take gradient steps in both <span class="math notranslate nohighlight">\(\theta\)</span> and <span class="math notranslate nohighlight">\(\phi\)</span> space simultaneously so that the guide and model play chase, with the guide tracking a moving posterior <span class="math notranslate nohighlight">\(\log p_{\theta}({\bf z} | {\bf x})\)</span>.
+或许有些令人惊讶, despite the moving target, 对很多不同的问题来说这个优化问题可以解决 (to a suitable level of approximation).</p>
+<p>简单来说，ELBO 是 SVI 最常见的目标函数，因为</p>
+<div class="math notranslate nohighlight">
+\[{\rm ELBO} = \log p_{\theta}({\bf x}) -  \rm{KL}\!\left( q_{\phi}({\bf z}) \lVert p_{\theta}({\bf z}|{\bf x}) \right) \leq \log p_{\theta}({\bf x})\]</div>
+<p>是 <span class="math notranslate nohighlight">\(\log p_{\theta}({\bf x})\)</span> 的下界，所以它被叫做证据下界(evidence lower bound)。其中KL散度的定义：</p>
+<div class="math notranslate nohighlight">
+\[KL(p(x)|q(x)) = E_{p(x)}\log \frac{p(x)}{q(x)}\]</div>
+<p>See <a class="reference external" href="https://blog.csdn.net/root_clive/article/details/103941412">KL散度(Kullback–Leibler divergence)非负性证明</a></p>
+<p>在总体思想上，变分推断很容易：我们所需要做的就是定义一个 <code class="docutils literal notranslate"><span class="pre">guide()</span></code> 并计算 ELBO 关于模型和指导分布参数的梯度。实际上，计算一般模型分布和指导分布的参数梯度会有一些技术难度 (see the tutorial <a class="reference internal" href="svi_part_iii.html"><span class="doc">SVI Part III</span></a> for a discussion). 就本教程而言, 让我们考虑一个已解决的问题，并看看如何使用 Pyro 进行变分推理。</p>
+</div>
+<div class="section" id="SVI-类">
+<h2><code class="docutils literal notranslate"><span class="pre">SVI</span></code> 类<a class="headerlink" href="#SVI-类" title="Permalink to this headline">¶</a></h2>
+<p>在 Pyro 中变分推断被封装在 <code class="docutils literal notranslate"><span class="pre">SVI</span></code> 的类中，目前只支持 ELBO 目标函数。</p>
+<p>构建一个SVI对象，用户需要指定三个输入： model, guide 和 optimizer. 我们已经在上面讨论了模型和指导分布，并且将在下一节详细讨论优化器，因此我们现在假设手头已经有了这三个要素。To construct an instance of <code class="docutils literal notranslate"><span class="pre">SVI</span></code> that will do optimization via the ELBO objective, the user writes</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyro</span>
+<span class="kn">from</span> <span class="nn">pyro.infer</span> <span class="kn">import</span> <span class="n">SVI</span><span class="p">,</span> <span class="n">Trace_ELBO</span>
+<span class="n">svi</span> <span class="o">=</span> <span class="n">SVI</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">guide</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="o">=</span><span class="n">Trace_ELBO</span><span class="p">())</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">SVI</span></code> 对象有两个方法, <code class="docutils literal notranslate"><span class="pre">step()</span></code> 和 <code class="docutils literal notranslate"><span class="pre">evaluate_loss()</span></code>, that encapsulate the logic for variational learning and evaluation:</p>
+<ol class="arabic simple">
+<li><p>该方法 <code class="docutils literal notranslate"><span class="pre">step()</span></code> 对其模型和指导分布中参数进行一步梯度下降，并且返回估计的损失函数 (i.e. minus the ELBO). If provided, the arguments to <code class="docutils literal notranslate"><span class="pre">step()</span></code> are piped to <code class="docutils literal notranslate"><span class="pre">model()</span></code> and <code class="docutils literal notranslate"><span class="pre">guide()</span></code>.</p></li>
+<li><p>该方法 <code class="docutils literal notranslate"><span class="pre">evaluate_loss()</span></code> 返回估计的损失函数，但是不进行梯度下降. Just like for <code class="docutils literal notranslate"><span class="pre">step()</span></code>, if provided, arguments to <code class="docutils literal notranslate"><span class="pre">evaluate_loss()</span></code> are piped to <code class="docutils literal notranslate"><span class="pre">model()</span></code> and <code class="docutils literal notranslate"><span class="pre">guide()</span></code>.</p></li>
+</ol>
+<p>对于损失函数为 ELBO 的情况，这两种方法都有可选参数 <code class="docutils literal notranslate"><span class="pre">num_particles</span></code>, 该参数表示样本数 used to compute the loss (in the case of <code class="docutils literal notranslate"><span class="pre">evaluate_loss</span></code>) and the loss and gradient (in the case of <code class="docutils literal notranslate"><span class="pre">step</span></code>).</p>
+</div>
+<div class="section" id="optimizers">
+<h2>optimizers<a class="headerlink" href="#optimizers" title="Permalink to this headline">¶</a></h2>
+<p>在Pyro中，model 和 guide 可以是满足如下条件的任意随机函数:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">guide</span></code> 不能包含 <code class="docutils literal notranslate"><span class="pre">model</span></code> 中任何具有参数 <code class="docutils literal notranslate"><span class="pre">obs</span></code> 的 <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> 语句.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">model</span></code> 和 <code class="docutils literal notranslate"><span class="pre">guide</span></code> 具备相同的输入参数(call signiture).</p></li>
+</ol>
+<p>(动态生成的潜变量和参数问题) This presents some challenges because it means that different executions of <code class="docutils literal notranslate"><span class="pre">model()</span></code> and <code class="docutils literal notranslate"><span class="pre">guide()</span></code> may have quite different behavior, with e.g. certain latent random variables and parameters only appearing some of the time. <strong>Indeed parameters may be created dynamically during the course of inference.</strong> 也就是说 the space we’re doing optimization over, which is parameterized by <span class="math notranslate nohighlight">\(\theta\)</span> and <span class="math notranslate nohighlight">\(\phi\)</span>, can grow and change dynamically.</p>
+<p>In order to support this behavior, Pyro 需要为学习过程中新出现的参数动态的生成一个优化器. 幸运的是, PyTorch有一个轻量级的优化库 (see <a class="reference external" href="http://pytorch.org/docs/master/optim.html">torch.optim</a>) that can easily be repurposed for the dynamic case.</p>
+<p>All of this is controlled by the <code class="docutils literal notranslate"><span class="pre">optim.PyroOptim</span></code> class, which is basically a thin wrapper around PyTorch optimizers. <code class="docutils literal notranslate"><span class="pre">PyroOptim</span></code> 有两个输入参数: a constructor for PyTorch optimizers <code class="docutils literal notranslate"><span class="pre">optim_constructor</span></code> and a specification of the optimizer arguments <code class="docutils literal notranslate"><span class="pre">optim_args</span></code>. 总的来说, 就是在优化的过程中, 一旦某个新的参数产生， <code class="docutils literal notranslate"><span class="pre">optim_constructor</span></code> 就会初始化一个指定类型的优化器 with arguments given by <code class="docutils literal notranslate"><span class="pre">optim_args</span></code>.</p>
+<p>Most users will probably not interact with <code class="docutils literal notranslate"><span class="pre">PyroOptim</span></code> directly and will instead interact with the aliases defined in <code class="docutils literal notranslate"><span class="pre">optim/__init__.py</span></code>. Let’s see how that goes.</p>
+<p>有两种方法可以指定优化器参数。简单的情况是, 使用一个指定参数的固定字典 <code class="docutils literal notranslate"><span class="pre">optim_args</span></code> 来初始化一个 PyTorch optimizers for <em>all</em> the parameters:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyro.optim</span> <span class="kn">import</span> <span class="n">Adam</span>
+
+<span class="n">adam_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">0.005</span><span class="p">,</span> <span class="s2">&quot;betas&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.999</span><span class="p">)}</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">Adam</span><span class="p">(</span><span class="n">adam_params</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>第二种指定参数的方法可以实现更精细的控制。这里用户需要指定由 Pyro 唤醒的一个可调用对象，该对象将在为新生成的参数创建优化器。 该可调用对象必须有如下两个输入:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">module_name</span></code>: 包含参数的模块的的 Pyro name, if any</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">param_name</span></code>: 参数的 Pyro name</p></li>
+</ol>
+<p>This gives the user the ability to, for example, customize learning rates for different parameters. For an example where this sort of level of control is useful, see the <a class="reference internal" href="svi_part_iii.html"><span class="doc">discussion of baselines</span></a>. 下面用一个简单的例子说明这个API.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyro.optim</span> <span class="kn">import</span> <span class="n">Adam</span>
+
+<span class="k">def</span> <span class="nf">per_param_callable</span><span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="n">param_name</span><span class="p">):</span>
+    <span class="c1"># 该函数与 module_name 无关，让我疑惑</span>
+    <span class="k">if</span> <span class="n">param_name</span> <span class="o">==</span> <span class="s1">&#39;my_special_parameter&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">0.010</span><span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">}</span>
+
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">Adam</span><span class="p">(</span><span class="n">per_param_callable</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>这相当于告诉 Pyro 将参数 <code class="docutils literal notranslate"><span class="pre">my_special_parameter</span></code> 的学习速率设为 <code class="docutils literal notranslate"><span class="pre">0.010</span></code>，并将所有其他参数的学习速率设为<code class="docutils literal notranslate"><span class="pre">0.001</span></code>。</p>
+</div>
+<div class="section" id="端对端例子">
+<h2>端对端例子<a class="headerlink" href="#端对端例子" title="Permalink to this headline">¶</a></h2>
+<p>我们以一个简单的例子结束。您已获得两面硬币。您想确定硬币是否公平，即硬币以相同的频率出现正面或背面.</p>
+<p>(先验分布是 <span class="math notranslate nohighlight">\(\rm{Beta}(10,10)\)</span>) You have a prior belief of <span class="math notranslate nohighlight">\(\rm{Beta}(10,10)\)</span> about the likely fairness of the coin based on two observations:</p>
+<ul class="simple">
+<li><p>it’s a standard quarter issued by the US Mint</p></li>
+<li><p>it’s a bit banged up from years of use</p></li>
+</ul>
+<center><figure><figcaption><p>Figure 1: Beta分布编码了我们对硬币公平性的先验信念。</p>
+</figcaption></figure></center><p>我们的模型是:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\theta \sim Beta(10, 10) \\
+\text{Measurement} |\theta \sim B(0, 1; \theta)\end{split}\]</div>
+<p>假设我们做了若干次试验，并且已经将 Measurements 收集在列表 <code class="docutils literal notranslate"><span class="pre">data</span></code> 中，则相应的 Pyro 模型是</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyro.distributions</span> <span class="kn">as</span> <span class="nn">dist</span>
+
+<span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="c1"># define the hyperparameters that control the beta prior</span>
+    <span class="n">alpha0</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">10.0</span><span class="p">)</span>
+    <span class="n">beta0</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">10.0</span><span class="p">)</span>
+    <span class="c1"># sample theta from the beta prior</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;latent_fairness&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Beta</span><span class="p">(</span><span class="n">alpha0</span><span class="p">,</span> <span class="n">beta0</span><span class="p">))</span>
+    <span class="c1"># loop over the observed data</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
+        <span class="c1"># observe datapoint i using the bernoulli</span>
+        <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;obs_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>这里我们有一个唯一的潜变量 <code class="docutils literal notranslate"><span class="pre">'latent_fairness'</span></code>, 它的分布是 <span class="math notranslate nohighlight">\(\rm{Beta}(10, 10)\)</span>. Conditioned on that random variable, we observe each of the datapoints using a bernoulli likelihood. 请注意，每个观测都在 Pyro 中分配了唯一的名称.</p>
+<p>我们的下一个任务是定义对应的指导分布 <code class="docutils literal notranslate"><span class="pre">guide()</span></code>，即为潜在随机变量 <span class="math notranslate nohighlight">\(\theta\)</span> 分配适当的变分分布。 A simple choice is to use another beta distribution parameterized by two trainable parameters <span class="math notranslate nohighlight">\(\alpha_q\)</span> and <span class="math notranslate nohighlight">\(\beta_q\)</span>. Actually, in this particular case this is the ‘right’ choice, since conjugacy of the bernoulli and beta distributions means that the exact posterior is a beta distribution. In Pyro we write:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">guide</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="c1"># register the two variational parameters with Pyro.</span>
+    <span class="n">alpha_q</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;alpha_q&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">15.0</span><span class="p">),</span>
+                         <span class="n">constraint</span><span class="o">=</span><span class="n">constraints</span><span class="o">.</span><span class="n">positive</span><span class="p">)</span>
+    <span class="n">beta_q</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;beta_q&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">15.0</span><span class="p">),</span>
+                        <span class="n">constraint</span><span class="o">=</span><span class="n">constraints</span><span class="o">.</span><span class="n">positive</span><span class="p">)</span>
+    <span class="c1"># sample latent_fairness from the distribution Beta(alpha_q, beta_q)</span>
+    <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;latent_fairness&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Beta</span><span class="p">(</span><span class="n">alpha_q</span><span class="p">,</span> <span class="n">beta_q</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>这里有几件事情需要注意：</p>
+<ul class="simple">
+<li><p>模型分布和指导分布中潜变量的名字必须严格一致。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">model(data)</span></code> 和 <code class="docutils literal notranslate"><span class="pre">guide(data)</span></code> 具备相同的输入。</p></li>
+<li><p>变分参数 <code class="docutils literal notranslate"><span class="pre">torch.tensor</span></code>. 而 <code class="docutils literal notranslate"><span class="pre">pyro.param</span></code> 中默认 <code class="docutils literal notranslate"><span class="pre">requires_grad=True</span></code>.</p></li>
+<li><p>我们使用 <code class="docutils literal notranslate"><span class="pre">constraint=constraints.positive</span></code> 来实现 <code class="docutils literal notranslate"><span class="pre">alpha_q</span></code> 和 <code class="docutils literal notranslate"><span class="pre">beta_q</span></code> 在优化过程中的非负约束。</p></li>
+</ul>
+<p>现在我们可以进行随机变分推断了。</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># set up the optimizer</span>
+<span class="n">adam_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">0.0005</span><span class="p">,</span> <span class="s2">&quot;betas&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.90</span><span class="p">,</span> <span class="mf">0.999</span><span class="p">)}</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">Adam</span><span class="p">(</span><span class="n">adam_params</span><span class="p">)</span>
+
+<span class="c1"># setup the inference algorithm</span>
+<span class="n">svi</span> <span class="o">=</span> <span class="n">SVI</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">guide</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="o">=</span><span class="n">Trace_ELBO</span><span class="p">())</span>
+
+<span class="n">n_steps</span> <span class="o">=</span> <span class="mi">5000</span>
+<span class="c1"># do gradient steps</span>
+<span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_steps</span><span class="p">):</span>
+    <span class="n">svi</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>注意 <code class="docutils literal notranslate"><span class="pre">step()</span></code> 方法中传入的 <code class="docutils literal notranslate"><span class="pre">data</span></code>, 它会被传入 <code class="docutils literal notranslate"><span class="pre">model()</span></code> 和 <code class="docutils literal notranslate"><span class="pre">guide()</span></code>. The only thing we’re missing at this point is some data. So let’s create some data and assemble all the code snippets above into a complete script:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.distributions.constraints</span> <span class="k">as</span> <span class="nn">constraints</span>
+<span class="kn">import</span> <span class="nn">pyro</span>
+<span class="kn">from</span> <span class="nn">pyro.optim</span> <span class="k">import</span> <span class="n">Adam</span>
+<span class="kn">from</span> <span class="nn">pyro.infer</span> <span class="k">import</span> <span class="n">SVI</span><span class="p">,</span> <span class="n">Trace_ELBO</span>
+<span class="kn">import</span> <span class="nn">pyro.distributions</span> <span class="k">as</span> <span class="nn">dist</span>
+
+<span class="c1"># this is for running the notebook in our testing framework</span>
+<span class="n">smoke_test</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;CI&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">)</span>
+<span class="n">n_steps</span> <span class="o">=</span> <span class="mi">2</span> <span class="k">if</span> <span class="n">smoke_test</span> <span class="k">else</span> <span class="mi">2000</span>
+
+<span class="c1"># enable validation (e.g. validate parameters of distributions)</span>
+<span class="k">assert</span> <span class="n">pyro</span><span class="o">.</span><span class="n">__version__</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;1.3.0&#39;</span><span class="p">)</span>
+<span class="n">pyro</span><span class="o">.</span><span class="n">enable_validation</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># clear the param store in case we&#39;re in a REPL</span>
+<span class="n">pyro</span><span class="o">.</span><span class="n">clear_param_store</span><span class="p">()</span>
+
+<span class="c1"># create some data with 6 observed heads and 4 observed tails</span>
+<span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">):</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">1.0</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">0.0</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="c1"># define the hyperparameters that control the beta prior</span>
+    <span class="n">alpha0</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">10.0</span><span class="p">)</span>
+    <span class="n">beta0</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">10.0</span><span class="p">)</span>
+    <span class="c1"># sample f from the beta prior</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;latent_fairness&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Beta</span><span class="p">(</span><span class="n">alpha0</span><span class="p">,</span> <span class="n">beta0</span><span class="p">))</span>
+    <span class="c1"># loop over the observed data</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
+        <span class="c1"># observe datapoint i using the bernoulli likelihood</span>
+        <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;obs_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+<span class="k">def</span> <span class="nf">guide</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="c1"># register the two variational parameters with Pyro</span>
+    <span class="c1"># - both parameters will have initial value 15.0.</span>
+    <span class="c1"># - because we invoke constraints.positive, the optimizer</span>
+    <span class="c1"># will take gradients on the unconstrained parameters</span>
+    <span class="c1"># (which are related to the constrained parameters by a log)</span>
+    <span class="n">alpha_q</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;alpha_q&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">15.0</span><span class="p">),</span>
+                         <span class="n">constraint</span><span class="o">=</span><span class="n">constraints</span><span class="o">.</span><span class="n">positive</span><span class="p">)</span>
+    <span class="n">beta_q</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;beta_q&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">15.0</span><span class="p">),</span>
+                        <span class="n">constraint</span><span class="o">=</span><span class="n">constraints</span><span class="o">.</span><span class="n">positive</span><span class="p">)</span>
+    <span class="c1"># sample latent_fairness from the distribution Beta(alpha_q, beta_q)</span>
+    <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;latent_fairness&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Beta</span><span class="p">(</span><span class="n">alpha_q</span><span class="p">,</span> <span class="n">beta_q</span><span class="p">))</span>
+
+<span class="c1"># setup the optimizer</span>
+<span class="n">adam_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">0.0005</span><span class="p">,</span> <span class="s2">&quot;betas&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.90</span><span class="p">,</span> <span class="mf">0.999</span><span class="p">)}</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">Adam</span><span class="p">(</span><span class="n">adam_params</span><span class="p">)</span>
+
+<span class="c1"># setup the inference algorithm</span>
+<span class="n">svi</span> <span class="o">=</span> <span class="n">SVI</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">guide</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="o">=</span><span class="n">Trace_ELBO</span><span class="p">())</span>
+
+<span class="c1"># do gradient steps</span>
+<span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_steps</span><span class="p">):</span>
+    <span class="n">svi</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">step</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+<span class="c1"># grab the learned variational parameters</span>
+<span class="n">alpha_q</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;alpha_q&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<span class="n">beta_q</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;beta_q&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+<span class="c1"># here we use some facts about the beta distribution</span>
+<span class="c1"># compute the inferred mean of the coin&#39;s fairness</span>
+<span class="n">inferred_mean</span> <span class="o">=</span> <span class="n">alpha_q</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha_q</span> <span class="o">+</span> <span class="n">beta_q</span><span class="p">)</span>
+<span class="c1"># compute inferred standard deviation</span>
+<span class="n">factor</span> <span class="o">=</span> <span class="n">beta_q</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha_q</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">alpha_q</span> <span class="o">+</span> <span class="n">beta_q</span><span class="p">))</span>
+<span class="n">inferred_std</span> <span class="o">=</span> <span class="n">inferred_mean</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">factor</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">based on the data and our prior belief, the fairness &quot;</span> <span class="o">+</span>
+      <span class="s2">&quot;of the coin is </span><span class="si">%.3f</span><span class="s2"> +- </span><span class="si">%.3f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">inferred_mean</span><span class="p">,</span> <span class="n">inferred_std</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+....................
+based on the data and our prior belief, the fairness of the coin is 0.535 +- 0.090
+</pre></div></div>
+</div>
+<p>(可以看出结果接近精确后验推断的值) This estimate is to be compared to the exact posterior mean, which in this case is given by <span class="math notranslate nohighlight">\(16/30 = 0.5\bar{3}\)</span>. Note that the final estimate of the fairness of the coin is in between the the fairness preferred by the prior (namely <span class="math notranslate nohighlight">\(0.50\)</span>) and the fairness suggested by the raw empirical frequencies (<span class="math notranslate nohighlight">\(6/10 = 0.60\)</span>).</p>
+</div>
+<div class="section" id="参考文献">
+<h2>参考文献<a class="headerlink" href="#参考文献" title="Permalink to this headline">¶</a></h2>
+<p>[1] <code class="docutils literal notranslate"><span class="pre">Automated</span> <span class="pre">Variational</span> <span class="pre">Inference</span> <span class="pre">in</span> <span class="pre">Probabilistic</span> <span class="pre">Programming</span></code>,      David Wingate, Theo Weber</p>
+<p>[2] <code class="docutils literal notranslate"><span class="pre">Black</span> <span class="pre">Box</span> <span class="pre">Variational</span> <span class="pre">Inference</span></code>,     Rajesh Ranganath, Sean Gerrish, David M. Blei</p>
+<p>[3] <code class="docutils literal notranslate"><span class="pre">Auto-Encoding</span> <span class="pre">Variational</span> <span class="pre">Bayes</span></code>,     Diederik P Kingma, Max Welling</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="svi_part_ii.html" class="btn btn-neutral float-right" title="SVI Part II: 条件独立, 子采样和 Amortization" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="intro_part_ii.html" class="btn btn-neutral float-left" title="Pyro 推断简介" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright Uber Technologies, Inc; 编译 by Heyang Gong
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
