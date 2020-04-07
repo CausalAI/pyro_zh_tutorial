@@ -38,7 +38,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="SVI Part I: Pyro 随机变分推断基础" href="svi_part_i.html" />
+    <link rel="next" title="SVI Part I: 随机变分推断基础" href="svi_part_i.html" />
     <link rel="prev" title="Pyro 模型介绍" href="intro_part_i.html" /> 
 </head>
 
@@ -94,14 +94,14 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="intro_part_i.html">Pyro 模型介绍</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Pyro 推断简介</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#一个简单例子">一个简单例子</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Conditioning">Conditioning</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#近似推断">近似推断</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#变分推断">变分推断</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#随机函数的条件化">随机函数的条件化</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#用指导分布近似后验">用指导分布近似后验</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#参数化模型和变分推断">参数化模型和变分推断</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#例子完整代码">例子完整代码</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#下一步？">下一步？</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="svi_part_i.html">SVI Part I: Pyro 随机变分推断基础</a></li>
+<li class="toctree-l1"><a class="reference internal" href="svi_part_i.html">SVI Part I: 随机变分推断基础</a></li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_ii.html">SVI Part II: 条件独立, 子采样和 Amortization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_iii.html">SVI Part III: ELBO 梯度估计</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中模型和数据维度</a></li>
@@ -467,16 +467,9 @@ div.rendered_html tbody tr:hover {
 <p><strong>知识点:</strong> 为了从数据中学习模型并对其进行推理，我们需要 be able to do inference. Pyro 包含 <code class="docutils literal notranslate"><span class="pre">pyro.do</span></code>，这是 Pearl 的 <code class="docutils literal notranslate"><span class="pre">do</span></code>-operator 的实现，用于因果推断。</p>
 <div class="section" id="Pyro-推断简介">
 <h1>Pyro 推断简介<a class="headerlink" href="#Pyro-推断简介" title="Permalink to this headline">¶</a></h1>
-<p>现代机器学习的许多内容 can be cast as approximate inference and expressed succinctly in a language like Pyro. To motivate the rest of this tutorial, 让我们为一个简单的物理问题建立一个生成模型，以便我们可以使用Pyro的推理机来解决它。但是，我们将首先导入本教程所需的模块：</p>
-<p>Table of Contents</p>
-<ul class="simple">
-<li><p><a class="reference external" href="#一个简单例子">一个简单例子</a></p></li>
-<li><p><a class="reference external" href="#Conditioning">Conditioning</a></p></li>
-<li><p><a class="reference external" href="#近似推断">近似推断 with guide</a></p></li>
-<li><p><a class="reference external" href="#变分推断">参数化随机函数和变分推断</a></p></li>
-</ul>
+<p>现代机器学习的许多内容可以理解成近似推断并且使用 Pyro 这样的语言表达出来. To motivate the rest of this tutorial, 让我们为一个简单的物理问题建立一个生成模型，以便我们可以使用 Pyro 的推理机制来解决它。</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -493,17 +486,14 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="section" id="一个简单例子">
-<h2>一个简单例子<a class="headerlink" href="#一个简单例子" title="Permalink to this headline">¶</a></h2>
-<p>假设我们试图得到某物的重量，但是我们使用的秤是不可靠的，并且每当我们称量同一物体时会给出稍微变动的读数。我们可以尝试 compensate for this variability by integrating the noisy measurement information with <strong>a guess based on some prior knowledge about the object</strong>, like its density or material properties. The following model encodes this process:</p>
+<p>假设我们试图得到某物的重量，但是我们使用的秤是不可靠的，并且每当我们称量同一物体时会给出稍微变动的读数。我们可以尝试 compensate for this variability by integrating the noisy measurement information with <strong>a guess based on some prior knowledge about the object</strong>, like its density or material properties. 我们用以下概率模型来模拟：</p>
 <div class="math notranslate nohighlight">
 \[{\sf weight} \,  \sim \cal {\sf Normal}({\mu}, 1)\]</div>
-<p>这是一个 guess based on some prior knowledge about the weight of the object.</p>
 <div class="math notranslate nohighlight">
 \[{\sf measurement} \, |  {\sf weight} \sim {\sf Normal}({\sf weight}, 0.75)\]</div>
-<p>Note that this is a model not only for our belief over weight, but also for the result of taking a measurement of it. 该模型对应于以下随机函数：</p>
+<p>其中，第一个式子表示该物体重量的先验分布，第二个式子表示对其进行测量的结果。该模型对应于以下随机函数：</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -513,24 +503,48 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-</div>
-<div class="section" id="Conditioning">
-<h2>Conditioning<a class="headerlink" href="#Conditioning" title="Permalink to this headline">¶</a></h2>
-<p>概率编程的真正威力是 in the ability to condition generative models on observed data and infer the latent factors that might have produced that data. 在Pyro中，we separate the expression of conditioning from its evaluation via inference, 使得我们能够 write a model once and condition it on many different observations. Pyro支持 constraining a model’s internal <code class="docutils literal notranslate"><span class="pre">sample</span></code> statements to be equal to a given set of observations.</p>
-<p>再次考虑称重的例子，也就是 <code class="docutils literal notranslate"><span class="pre">scale</span></code>. Suppose we want to sample from the distribution of <code class="docutils literal notranslate"><span class="pre">weight</span></code> given input <code class="docutils literal notranslate"><span class="pre">mu</span> <span class="pre">=</span> <span class="pre">8.5</span></code>, but now we have observed that <code class="docutils literal notranslate"><span class="pre">measurement</span> <span class="pre">=</span> <span class="pre">9.5</span></code>. That is, we wish to <em>infer</em> the distribution:</p>
-<div class="math notranslate nohighlight">
-\[({\sf weight} \, | \, {\mu = 8.5}, {\sf measurement} = 9.5) \sim \, ?\]</div>
-<p>Pyro provides the function <code class="docutils literal notranslate"><span class="pre">pyro.condition</span></code> to allow us to constrain the values of sample statements. <code class="docutils literal notranslate"><span class="pre">pyro.condition</span></code> is a higher-order function that takes a model and a dictionary of observations and returns a new model that has the same input and output signatures but always uses the given values at observed <code class="docutils literal notranslate"><span class="pre">sample</span></code> statements:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">conditioned_scale</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">condition</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;measurement&quot;</span><span class="p">:</span> <span class="mf">9.5</span><span class="p">})</span>
+<span></span><span class="c1"># Hint for the next section</span>
+<span class="k">def</span> <span class="nf">scale_obs</span><span class="p">(</span><span class="n">mu</span><span class="p">):</span>
+    <span class="n">weight</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="mf">1.</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;measurement&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">weight</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="mf">9.5</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<p>Because it behaves just like an ordinary Python function, conditioning can be deferred or parametrized with Python’s <code class="docutils literal notranslate"><span class="pre">lambda</span></code> or <code class="docutils literal notranslate"><span class="pre">def</span></code>:</p>
+<div class="section" id="随机函数的条件化">
+<h2>随机函数的条件化<a class="headerlink" href="#随机函数的条件化" title="Permalink to this headline">¶</a></h2>
+<p>概率编程的真正威力是把生成模型对观测数据条件化并且推断产生观测数据的隐变量的能力。在 Pyro 中，we separate the expression of conditioning from its evaluation via inference, 使得我们能够只写一个随机函数 <code class="docutils literal notranslate"><span class="pre">model</span></code> 而对许多不同的样本进行条件化. Pyro suppors constraining a model’s internal <code class="docutils literal notranslate"><span class="pre">sample</span></code> statements to be equal to a given set of observations.</p>
+<p>再次考虑称重的例子，也就是 <code class="docutils literal notranslate"><span class="pre">scale</span></code>. 假设 <code class="docutils literal notranslate"><span class="pre">weight</span></code> 的分布参数 <code class="docutils literal notranslate"><span class="pre">mu</span> <span class="pre">=</span> <span class="pre">8.5</span></code>, 然后我们得到该物理的一个测量 <code class="docutils literal notranslate"><span class="pre">measurement</span> <span class="pre">=</span> <span class="pre">9.5</span></code>. 那么，需要推断的是 <code class="docutils literal notranslate"><span class="pre">weight</span></code> 的后验分布:</p>
+<div class="math notranslate nohighlight">
+\[p({\sf weight} \, |{\sf measurement}=9.5 \,; \, \mu=8.5) = \, ?\]</div>
+<p>Pyro provides the function <code class="docutils literal notranslate"><span class="pre">pyro.condition</span></code> to allow us to constrain the values of sample statements. <code class="docutils literal notranslate"><span class="pre">pyro.condition</span></code> 是一个输入是 a model and a dictionary of observations 的高阶函数， 它的输出是 a new model that has the same input and output signatures but always uses the given values at observed <code class="docutils literal notranslate"><span class="pre">sample</span></code> statements:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">mu</span> <span class="o">=</span> <span class="mf">8.5</span>
+<span class="n">conditioned_scale</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">condition</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;measurement&quot;</span><span class="p">:</span> <span class="mf">9.5</span><span class="p">})</span>
+<span class="c1"># Input of `pyro.condition`: a model and a dictionary of observations</span>
+<span class="n">conditioned_scale</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span>
+<span class="c1"># Always uses the given values at observed sample statements!</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+9.5
+</pre></div></div>
+</div>
+<p>因果它就像常规 Python 函数, conditioning can be deferred or parametrized with Python’s <code class="docutils literal notranslate"><span class="pre">lambda</span></code> or <code class="docutils literal notranslate"><span class="pre">def</span></code>:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
@@ -541,7 +555,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<p>在某些情况下可能更方便 to pass observations directly to individual <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> statements instead of using <code class="docutils literal notranslate"><span class="pre">pyro.condition</span></code>. The optional <code class="docutils literal notranslate"><span class="pre">obs</span></code> keyword argument is reserved by <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> for that purpose:</p>
+<p>在某些情况下，直接在 <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> 语句中而不是使用 <code class="docutils literal notranslate"><span class="pre">pyro.condition</span></code> 定义条件化可能更方便. <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> 的可选参数 <code class="docutils literal notranslate"><span class="pre">obs</span></code> 就是用于定义条件化:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
@@ -556,26 +570,36 @@ div.rendered_html tbody tr:hover {
 </div>
 <p>最后，除了用于合并观察数据的 <code class="docutils literal notranslate"><span class="pre">pyro.condition</span></code> 之外，Pyro还包含 <code class="docutils literal notranslate"><span class="pre">pyro.do</span></code>，这是 Pearl 的 <code class="docutils literal notranslate"><span class="pre">do</span></code>-operator 的实现，用于因果推断，其接口与 <code class="docutils literal notranslate"><span class="pre">pyro.condition</span></code> 相同。<code class="docutils literal notranslate"><span class="pre">condition</span></code> and <code class="docutils literal notranslate"><span class="pre">do</span></code> 可以自由混合和组合，使Pyro成为基于模型的因果推断的强大工具。</p>
 </div>
-<div class="section" id="近似推断">
-<h2>近似推断<a class="headerlink" href="#近似推断" title="Permalink to this headline">¶</a></h2>
-<p>我们可以进行 Flexible Approximate Inference With Guide Functions.</p>
-<p>Let’s return to <code class="docutils literal notranslate"><span class="pre">conditioned_scale</span></code>. Now that we have conditioned on an observation of <code class="docutils literal notranslate"><span class="pre">measurement</span></code>, we can use Pyro’s approximate inference algorithms to estimate the distribution over <code class="docutils literal notranslate"><span class="pre">weight</span></code> given <code class="docutils literal notranslate"><span class="pre">guess</span></code> and <code class="docutils literal notranslate"><span class="pre">measurement</span> <span class="pre">==</span> <span class="pre">data</span></code>.</p>
-<p>让我们回到 <code class="docutils literal notranslate"><span class="pre">conditioned_scale</span></code>。现在我们 have conditioned on an observation of <code class="docutils literal notranslate"><span class="pre">measurement</span></code>，于是我们可以使用 Pyro 的近似推理算法来 estimate the distribution over <code class="docutils literal notranslate"><span class="pre">weight</span></code> given <code class="docutils literal notranslate"><span class="pre">mu</span></code> and <code class="docutils literal notranslate"><span class="pre">measurement</span> <span class="pre">=</span> <span class="pre">data</span></code>.</p>
-<p>Pyro中的推理算法，例如 <code class="docutils literal notranslate"><span class="pre">pyro.infer.SVI</span></code>，允许我们使用任意随机函数，我们将其称为 <em>guide functions</em> or <em>guides</em>，作为近似后验分布. Guide functions 必须满足以下两个条件才能成为特定模型的有效近似后验分布：</p>
-<ol class="arabic simple">
-<li><p>all unobserved (i.e., not conditioned) sample statements 需要在 model 和 guide 中同时出现。</p></li>
-<li><p>model 和 guide 具有相同的 input signature (i.e., takes the same arguments)</p></li>
-</ol>
-<p>Guide functions 的作用(或者角色)是：</p>
-<ul class="simple">
-<li><p>as programmable, data-dependent proposal distributions 用于 importance sampling, rejection sampling, sequential Monte Carlo, MCMC, and independent Metropolis-Hastings, and</p></li>
-<li><p>as variational distributions or inference networks 用于随机变分推理。</p></li>
-</ul>
-<p>目前，重要性抽样，MCMC和随机变分推断已在Pyro中实现，我们计划在将来添加其他算法。</p>
-<p>尽管 guide 的精确含义在不同的推断算法中有所不同，但通常应选择 guide function，使其 principlely 具有足够的灵活性 to closely approximate the distribution over all unobserved <code class="docutils literal notranslate"><span class="pre">sample</span></code>(也就是 not conditioned) statements in the model.</p>
-<p>In the case of <code class="docutils literal notranslate"><span class="pre">scale</span></code>, <code class="docutils literal notranslate"><span class="pre">weight</span></code> 给定 <code class="docutils literal notranslate"><span class="pre">mu</span></code> 和 <code class="docutils literal notranslate"><span class="pre">measurement</span></code> 的真实后验分布是 <span class="math notranslate nohighlight">\(N(9.14, 0.6)\)</span>。 (模型非常简单，因此我们可以解析的得到后验分布, for derivation, see for example Section 3.4 of <a class="reference external" href="http://www.stat.cmu.edu/~brian/463-663/week09/Chapter%2003.pdf">http://www.stat.cmu.edu/~brian/463-663/week09/Chapter%2003.pdf</a> .)</p>
+<div class="section" id="用指导分布近似后验">
+<h2>用指导分布近似后验<a class="headerlink" href="#用指导分布近似后验" title="Permalink to this headline">¶</a></h2>
+<p>我们可以使用指导函数(guide function)进行灵活的近似推断。</p>
+<p>让我们回到 <code class="docutils literal notranslate"><span class="pre">conditioned_scale</span></code>。现在我们有一个对 <code class="docutils literal notranslate"><span class="pre">measurement</span></code> 条件化的模型(model)，于是我们可以使用 Pyro 的近似推理算法来估计 <code class="docutils literal notranslate"><span class="pre">weight</span></code> 已知参数 <code class="docutils literal notranslate"><span class="pre">mu</span></code> 和给定观测数据 <code class="docutils literal notranslate"><span class="pre">measurement</span> <span class="pre">=</span> <span class="pre">data</span></code> 的后验分布.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">scale_obs</span><span class="p">(</span><span class="n">mu</span><span class="p">):</span>
+    <span class="n">weight</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="mf">1.</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;measurement&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">weight</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="mf">9.5</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Pyro中的推理算法，例如 <code class="docutils literal notranslate"><span class="pre">pyro.infer.SVI</span></code>，允许我们使用任意随机函数，我们将其称为指导函数(<em>guide functions</em> or <em>guides</em>)，作为近似后验分布， 指导函数必须满足以下两个条件才能成为特定模型的有效近似后验分布：</p>
+<ol class="arabic simple">
+<li><p>所有的非观测变量抽样语句需要在 model 和 guide 中同时出现。</p></li>
+<li><p>模型分布和指导分布具有相同的输入参数 (input signature).</p></li>
+</ol>
+<p>指导函数的作用(或者角色)是：</p>
+<ul class="simple">
+<li><p>作为一个可编程和数据依赖的建议分布(proposal distribution) 用于重要采样, 拒绝采样, 序列蒙特卡罗采样, MCMC, and independent Metropolis-Hastings, and</p></li>
+<li><p>作为一个变分分布(variational distributions or inference networks) 用于随机变分推理。</p></li>
+</ul>
+<p>目前，重要性抽样，MCMC和随机变分推断已在 Pyro 中实现，我们计划在将来添加其他算法。</p>
+<p>尽管指导函数的定义在不同的推断算法中有所不同，但通常应选择 guide function，使其原则上具有足够的灵活性 to closely approximate the distribution over all unobserved <code class="docutils literal notranslate"><span class="pre">sample</span></code>(也就是非条件化的变量) statements in the model.</p>
+<p>在我们的例子 <code class="docutils literal notranslate"><span class="pre">scale</span></code> 中, <code class="docutils literal notranslate"><span class="pre">weight</span></code> 给定参数 <code class="docutils literal notranslate"><span class="pre">mu</span></code> 和观测 <code class="docutils literal notranslate"><span class="pre">measurement</span></code> 的真实后验分布是 <span class="math notranslate nohighlight">\(N(9.14, 0.6)\)</span>。 (模型非常简单，因此我们可以解析的得到后验分布, for derivation, see for example <a class="reference external" href="http://www.stat.cmu.edu/~brian/463-663/week09/Chapter%2003.pdf">Section 3.4 of this book</a>.)</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -586,25 +610,39 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-</div>
-<div class="section" id="变分推断">
-<h2>变分推断<a class="headerlink" href="#变分推断" title="Permalink to this headline">¶</a></h2>
-<p>Parametrized Stochastic Functions and Variational Inference</p>
-<p>尽管我们可以写出 <code class="docutils literal notranslate"><span class="pre">scale</span></code> 的精确后验分布，但是总的来说，指定一个近似于任意条件随机函数的后验分布的 guide 是很困难的。实际上，可以准确确定真实后验的随机函数是例外而不是一般规则。例如，even a version of our <code class="docutils literal notranslate"><span class="pre">scale</span></code> example with a nonlinear function in the middle may be intractable:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">intractable_scale</span><span class="p">(</span><span class="n">guess</span><span class="p">):</span>
+<span></span><span class="c1"># Hint for the next section</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">constraints</span>
+<span class="k">def</span> <span class="nf">scale_parametrized_guide_constrained</span><span class="p">(</span><span class="n">mu</span><span class="p">):</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">mu</span><span class="p">))</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">1.</span><span class="p">),</span> <span class="n">constraint</span><span class="o">=</span><span class="n">constraints</span><span class="o">.</span><span class="n">positive</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="参数化模型和变分推断">
+<h2>参数化模型和变分推断<a class="headerlink" href="#参数化模型和变分推断" title="Permalink to this headline">¶</a></h2>
+<p>Parametrized Stochastic Functions and Variational Inference</p>
+<p>尽管我们可以写出 <code class="docutils literal notranslate"><span class="pre">scale</span></code> 的精确后验分布，但是总的来说，指定一个近似于任意条件随机函数的后验分布的指导分布是很困难的。实际上，可以计算精确后验的随机函数是很少见的。例如，即使在我们的例子 <code class="docutils literal notranslate"><span class="pre">scale</span></code> 中，如果随机函数的中间过程存在某种非线性，那么可能就是无法计算其精确后验分布:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># 随机函数无法计算精确后验分布</span>
+<span class="k">def</span> <span class="nf">intractable_scale</span><span class="p">(</span><span class="n">guess</span><span class="p">):</span>
     <span class="n">weight</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">guess</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;measurement&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">some_nonlinear_function</span><span class="p">(</span><span class="n">weight</span><span class="p">),</span> <span class="mf">0.75</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
-<p>因此我们的做法是 is use the top-level function <code class="docutils literal notranslate"><span class="pre">pyro.param</span></code> to specify a <em>family</em> of guides indexed by named parameters, and search for the member of that family that is the best approximation according to some loss function. 这种近似后验推断的方法称为“变分推断”。</p>
-<p><code class="docutils literal notranslate"><span class="pre">pyro.param</span></code> 是 a frontend for Pyro’s 键值 <em>参数存储</em>(key-value <em>parameter store</em>)，, which is described in more detail in the documentation. 像 <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> 一样，<code class="docutils literal notranslate"><span class="pre">pyro.param</span></code> 总是以名称作为第一个参数来调用。The first time <code class="docutils literal notranslate"><span class="pre">pyro.param</span></code> is called with a particular name, it stores its argument in the parameter store, 然后返回该值。之后，when it is called with that name, it returns the value from the parameter store regardless of any other arguments. 这里类似于此处的
-<code class="docutils literal notranslate"><span class="pre">simple_param_store.setdefault</span></code> , but with some additional tracking and management functionality.</p>
+<p>因此我们的做法是使用 top-level function <code class="docutils literal notranslate"><span class="pre">pyro.param</span></code> 来定义一族指导分布 indexed by named parameters, 然后在这族分布中搜索在某种损失意义下最接近真实后验分布的指导分布。这种近似后验推断的方法称为“变分推断”。</p>
+<p><code class="docutils literal notranslate"><span class="pre">pyro.param</span></code> 是一个 Pyro’s 键值参数存储区(key-value parameter store) 的前端，which is described in more detail in the documentation. 像 <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> 一样，<code class="docutils literal notranslate"><span class="pre">pyro.param</span></code> 总是以 name 作为第一个参数来调用。 <code class="docutils literal notranslate"><span class="pre">pyro.param</span></code> 第一次带特定 name 的调用之后, 它把它的参数存储在 parameter store 中, 然后返回该值。之后，当使用该名称进行调用时，它从参数存储区返回值 regardless of any other arguments。这里类似于此处的 <code class="docutils literal notranslate"><span class="pre">simple_param_store.setdefault</span></code> , 但具有一些附加的跟踪和管理功能。</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">simple_param_store</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="n">a</span> <span class="o">=</span> <span class="n">simple_param_store</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
 </pre></div>
@@ -622,8 +660,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<p>As an aside, note that in <code class="docutils literal notranslate"><span class="pre">scale_parametrized_guide</span></code>, we had to apply <code class="docutils literal notranslate"><span class="pre">torch.abs</span></code> to parameter <code class="docutils literal notranslate"><span class="pre">b</span></code> because the standard deviation of a normal distribution has to be positive; similar restrictions also apply to parameters of many other distributions. The PyTorch distributions library, which Pyro is built on, 提供了 <a class="reference external" href="https://pytorch.org/docs/master/distributions.html#module-torch.distributions.constraints">constraints module</a> 用于实现此类限制, and applying constraints to Pyro parameters
-is as easy as passing the relevant <code class="docutils literal notranslate"><span class="pre">constraint</span></code> object to <code class="docutils literal notranslate"><span class="pre">pyro.param</span></code>:</p>
+<p>As an aside, note that in <code class="docutils literal notranslate"><span class="pre">scale_parametrized_guide</span></code>, we had to apply <code class="docutils literal notranslate"><span class="pre">torch.abs</span></code> to parameter <code class="docutils literal notranslate"><span class="pre">b</span></code> 是因为正态分布的标准差必须为正; 类似的约束同样适用于其他许多分布的参数. PyTorch 分布库提供了 <a class="reference external" href="https://pytorch.org/docs/master/distributions.html#module-torch.distributions.constraints">约束模块(constraints module)</a> 用于实现此类约束, and applying constraints to Pyro parameters is as easy as passing the relevant <code class="docutils literal notranslate"><span class="pre">constraint</span></code> object to <code class="docutils literal notranslate"><span class="pre">pyro.param</span></code>:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
@@ -640,14 +677,18 @@ is as easy as passing the relevant <code class="docutils literal notranslate"><s
 </div>
 <p>Pyro is built to enable <em>stochastic variational inference</em>, a powerful and widely applicable class of variational inference algorithms with 三个关键特征:</p>
 <ol class="arabic simple">
-<li><p>参数始终是实数值张量</p></li>
-<li><p>We compute Monte Carlo estimates of 损失函数 from samples of execution histories of the model and guide</p></li>
+<li><p>参数都是实数值张量</p></li>
+<li><p>我们使用模型分布和指导分布的 samples of execution histories 来计算损失函数的蒙特卡罗估计</p></li>
 <li><p>我们使用随机梯度下降法搜索最佳参数。</p></li>
 </ol>
-<p>将随机梯度下降与PyTorch的GPU加速张量数学和自动微分相结合 allows us to scale variational inference to very high-dimensional parameter spaces and massive datasets.</p>
-<p>Pyro’s SVI functionality is described in detail in the <a class="reference internal" href="svi_part_i.html"><span class="doc">SVI tutorial</span></a>. Here is a very simple example applying it to <code class="docutils literal notranslate"><span class="pre">scale</span></code>:</p>
+<p>将随机梯度下降与 PyTorch 的 GPU 加速张量数学和自动微分相结合，使我们能够在高维参数空间和大规模数据下进行变分推断。</p>
+<p>有关 Pyro 的 SVI 功能详细描述参见 <a class="reference internal" href="svi_part_i.html"><span class="doc">SVI tutorial</span></a>.</p>
+</div>
+<div class="section" id="例子完整代码">
+<h2>例子完整代码<a class="headerlink" href="#例子完整代码" title="Permalink to this headline">¶</a></h2>
+<p>我们使用变分推断估计 <code class="docutils literal notranslate"><span class="pre">scale</span></code> 在已知参数 <span class="math notranslate nohighlight">\(\mu=8.5\)</span>，给定观测 <code class="docutils literal notranslate"><span class="pre">measurement=9.5</span></code> 之后的后验分布:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -659,15 +700,12 @@ is as easy as passing the relevant <code class="docutils literal notranslate"><s
 <span class="kn">import</span> <span class="nn">pyro.infer</span>
 <span class="kn">import</span> <span class="nn">pyro.optim</span>
 <span class="kn">import</span> <span class="nn">pyro.distributions</span> <span class="k">as</span> <span class="nn">dist</span>
-
 <span class="n">pyro</span><span class="o">.</span><span class="n">set_rng_seed</span><span class="p">(</span><span class="mi">101</span><span class="p">)</span>
-
 <span class="n">mu</span> <span class="o">=</span> <span class="mf">8.5</span>
 
 <span class="k">def</span> <span class="nf">scale</span><span class="p">(</span><span class="n">mu</span><span class="p">):</span>
     <span class="n">weight</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;measurement&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">weight</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">))</span>
-
 <span class="n">conditioned_scale</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">condition</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;measurement&quot;</span><span class="p">:</span> <span class="mf">9.5</span><span class="p">})</span>
 
 <span class="k">def</span> <span class="nf">scale_parametrized_guide</span><span class="p">(</span><span class="n">mu</span><span class="p">):</span>
@@ -680,7 +718,6 @@ is as easy as passing the relevant <code class="docutils literal notranslate"><s
                      <span class="n">guide</span><span class="o">=</span><span class="n">scale_parametrized_guide</span><span class="p">,</span>
                      <span class="n">optim</span><span class="o">=</span><span class="n">pyro</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">SGD</span><span class="p">({</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span> <span class="s2">&quot;momentum&quot;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">}),</span>
                      <span class="n">loss</span><span class="o">=</span><span class="n">pyro</span><span class="o">.</span><span class="n">infer</span><span class="o">.</span><span class="n">Trace_ELBO</span><span class="p">())</span>
-
 
 <span class="n">losses</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span><span class="n">b</span>  <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
 <span class="n">num_steps</span> <span class="o">=</span> <span class="mi">2500</span>
@@ -711,11 +748,11 @@ b =  0.6285384893417358
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/intro_part_ii_25_1.png" src="_images/intro_part_ii_25_1.png" />
+<img alt="_images/intro_part_ii_28_1.png" src="_images/intro_part_ii_28_1.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -736,15 +773,15 @@ b =  0.6285384893417358
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/intro_part_ii_26_0.png" src="_images/intro_part_ii_26_0.png" />
+<img alt="_images/intro_part_ii_29_0.png" src="_images/intro_part_ii_29_0.png" />
 </div>
 </div>
-<p><strong>注意，SVI获得的参数非常接近 true parameters of the desired conditional distribution. This is to be expected as our guide is from the same family.</strong></p>
-<p>Note that optimization will update the values of the guide parameters in the parameter store, so that once we find good parameter values, 我们可以将 guide 的样本作为后验样本用于后续任务.</p>
+<p><strong>注意，因为我们定义的指导分布和真实后验分布是同一族分布，所以SVI获得的参数非常接近真实参数。</strong></p>
+<p>由于优化过程会更新参数存储区中指导分布的参数, 所以一旦我们找到了好的参数, 我们可以将指导分布的样本作为后验样本用于后续任务.</p>
 </div>
 <div class="section" id="下一步？">
 <h2>下一步？<a class="headerlink" href="#下一步？" title="Permalink to this headline">¶</a></h2>
-<p>在 <a class="reference internal" href="vae.html"><span class="doc">Variational Autoencoder tutorial</span></a> 中，我们将会看到 how models like <code class="docutils literal notranslate"><span class="pre">scale</span></code> can be augmented with deep neural networks and use stochastic variational inference to 建立图像生成模型.</p>
+<p>在 <a class="reference internal" href="vae.html"><span class="doc">Variational Autoencoder tutorial</span></a> 中，我们将会看到如何使用深度神经网络来增强 <code class="docutils literal notranslate"><span class="pre">scale</span></code> 这样的模型，以及使用随机变分推断来建立图像生成模型.</p>
 </div>
 </div>
 
@@ -756,7 +793,7 @@ b =  0.6285384893417358
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="svi_part_i.html" class="btn btn-neutral float-right" title="SVI Part I: Pyro 随机变分推断基础" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="svi_part_i.html" class="btn btn-neutral float-right" title="SVI Part I: 随机变分推断基础" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="intro_part_i.html" class="btn btn-neutral float-left" title="Pyro 模型介绍" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

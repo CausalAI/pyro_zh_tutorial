@@ -93,7 +93,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="intro_part_i.html">Pyro 模型介绍</a></li>
 <li class="toctree-l1"><a class="reference internal" href="intro_part_ii.html">Pyro 推断简介</a></li>
-<li class="toctree-l1"><a class="reference internal" href="svi_part_i.html">SVI Part I: Pyro 随机变分推断基础</a></li>
+<li class="toctree-l1"><a class="reference internal" href="svi_part_i.html">SVI Part I: 随机变分推断基础</a></li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_ii.html">SVI Part II: 条件独立, 子采样和 Amortization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_iii.html">SVI Part III: ELBO 梯度估计</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中模型和数据维度</a></li>
@@ -240,40 +240,43 @@
 </style>
 <div class="section" id="welcome-to-pyro-examples-and-tutorials">
 <h1>Welcome to Pyro Examples and Tutorials!<a class="headerlink" href="#welcome-to-pyro-examples-and-tutorials" title="Permalink to this headline">¶</a></h1>
+<p>— by Heyang Gong</p>
+<p>Pyro 是一个 Deep Universal Probabilistic Programming, 将会是我们 Causal AI 的一个重要编程框架。这是一个 Pyro 教程的中文编译项目，我们的翻译一方面仅仅翻译部分内容使之尽量接近原来的官方教程，另外一方面会加入一些个人的总结的理解。</p>
+<p>需要注意：在本教程中，我们混用了随机函数，函数，分布，随机变量这几个概念，他们都是 概率程序(probabilistic programs)的不同说法。</p>
+<p>Causal AI: <a class="reference external" href="https://sites.google.com/view/minituring/">https://sites.google.com/view/minituring/</a></p>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Introduction:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="intro_part_i.html">Pyro 模型介绍</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="intro_part_i.html#原始随机函数">原始随机函数</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro_part_i.html#初等随机函数">初等随机函数</a></li>
 <li class="toctree-l2"><a class="reference internal" href="intro_part_i.html#一个简单模型">一个简单模型</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro_part_i.html#The-pyro.sample-Primitive">The <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> Primitive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro_part_i.html#pyro.sample-原语"><code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> 原语</a></li>
 <li class="toctree-l2"><a class="reference internal" href="intro_part_i.html#通用概率编程">通用概率编程</a></li>
 <li class="toctree-l2"><a class="reference internal" href="intro_part_i.html#下一步？">下一步？</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="intro_part_ii.html">Pyro 推断简介</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="intro_part_ii.html#一个简单例子">一个简单例子</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro_part_ii.html#Conditioning">Conditioning</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro_part_ii.html#近似推断">近似推断</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro_part_ii.html#变分推断">变分推断</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro_part_ii.html#随机函数的条件化">随机函数的条件化</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro_part_ii.html#用指导分布近似后验">用指导分布近似后验</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro_part_ii.html#参数化模型和变分推断">参数化模型和变分推断</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro_part_ii.html#例子完整代码">例子完整代码</a></li>
 <li class="toctree-l2"><a class="reference internal" href="intro_part_ii.html#下一步？">下一步？</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="svi_part_i.html">SVI Part I: Pyro 随机变分推断基础</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="svi_part_i.html#SVI数学基础">SVI数学基础</a></li>
-<li class="toctree-l2"><a class="reference internal" href="svi_part_i.html#近似后验分布Guide">近似后验分布Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="svi_part_i.html">SVI Part I: 随机变分推断基础</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="svi_part_i.html#随机变分推断数学背景">随机变分推断数学背景</a></li>
+<li class="toctree-l2"><a class="reference internal" href="svi_part_i.html#近似后验的guide">近似后验的guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_i.html#目标函数ELBO">目标函数ELBO</a></li>
-<li class="toctree-l2"><a class="reference internal" href="svi_part_i.html#SVI-Class"><code class="docutils literal notranslate"><span class="pre">SVI</span></code> Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="svi_part_i.html#SVI-类"><code class="docutils literal notranslate"><span class="pre">SVI</span></code> 类</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_i.html#optimizers">optimizers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_i.html#端对端例子">端对端例子</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_i.html#参考文献">参考文献</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_ii.html">SVI Part II: 条件独立, 子采样和 Amortization</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="svi_part_ii.html#在Pyro中标记条件独立">在Pyro中标记条件独立</a></li>
+<li class="toctree-l2"><a class="reference internal" href="svi_part_ii.html#Pyro-申明条件独立">Pyro 申明条件独立</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_ii.html#子采样">子采样</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_ii.html#Amortization">Amortization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="svi_part_ii.html#More-about-plate">More about <code class="docutils literal notranslate"><span class="pre">plate</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_ii.html#参考文献">参考文献</a></li>
 </ul>
 </li>

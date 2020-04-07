@@ -39,7 +39,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="SVI Part III: ELBO 梯度估计" href="svi_part_iii.html" />
-    <link rel="prev" title="SVI Part I: Pyro 随机变分推断基础" href="svi_part_i.html" /> 
+    <link rel="prev" title="SVI Part I: 随机变分推断基础" href="svi_part_i.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -94,16 +94,20 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="intro_part_i.html">Pyro 模型介绍</a></li>
 <li class="toctree-l1"><a class="reference internal" href="intro_part_ii.html">Pyro 推断简介</a></li>
-<li class="toctree-l1"><a class="reference internal" href="svi_part_i.html">SVI Part I: Pyro 随机变分推断基础</a></li>
+<li class="toctree-l1"><a class="reference internal" href="svi_part_i.html">SVI Part I: 随机变分推断基础</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">SVI Part II: 条件独立, 子采样和 Amortization</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#在Pyro中标记条件独立">在Pyro中标记条件独立</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Pyro-申明条件独立">Pyro 申明条件独立</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#子采样">子采样</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#自动子采样-with-plate">自动子采样 with <code class="docutils literal notranslate"><span class="pre">plate</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#自定义子采样-with-plate">自定义子采样 with <code class="docutils literal notranslate"><span class="pre">plate</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#自定义子采样-with-plate">自定义子采样 with <code class="docutils literal notranslate"><span class="pre">plate</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#仅仅只有局部变量时候的子采样">仅仅只有局部变量时候的子采样</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#同时存在局部和全局变量时候的子采样">同时存在局部和全局变量时候的子采样</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#More-about-plate">More about <code class="docutils literal notranslate"><span class="pre">plate</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#Amortization">Amortization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#More-about-plate">More about <code class="docutils literal notranslate"><span class="pre">plate</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#参考文献">参考文献</a></li>
 </ul>
 </li>
@@ -261,14 +265,20 @@ observations are conditionally independent given the latents, the log likelihood
 \[ E[\log p({\bf x}| {\bf z})] \approx \frac{1}{N}\sum_{i=1}^N \log p({\bf x}_i | {\bf z}) \approx  \frac{1}{M}
 \sum_{i\in{\mathcal{I}_M}} \log p({\bf x}_i | {\bf z})\]</div>
 <p>where <span class="math notranslate nohighlight">\(\mathcal{I}_M\)</span> is a mini-batch of indices of size <span class="math notranslate nohighlight">\(M\)</span> with <span class="math notranslate nohighlight">\(M&lt;N\)</span> (for a discussion please see references [1,2]). 很好，问题解决了！但是我们如何在Pyro中实现这一点？</p>
-<p>回顾：</p>
-<ul class="simple">
-<li><p>因为 <code class="docutils literal notranslate"><span class="pre">model</span> <span class="pre">=</span> <span class="pre">primitive</span> <span class="pre">r.v.</span> <span class="pre">+</span> <span class="pre">deterministic</span> <span class="pre">function</span></code>, 那么 <code class="docutils literal notranslate"><span class="pre">guide</span></code> 就应该对应的是此公式中 <code class="docutils literal notranslate"><span class="pre">latent</span> <span class="pre">r.v.</span></code> 给定部分 <code class="docutils literal notranslate"><span class="pre">observed</span> <span class="pre">r.v.</span></code> 的后验分布。</p></li>
-<li><p>在变分自编码器中，用来近似后验分布的 <code class="docutils literal notranslate"><span class="pre">guide</span></code> <span class="math notranslate nohighlight">\(q_\phi(z)\)</span> 是局部的，意味着对一个每个样本 <span class="math notranslate nohighlight">\(x_i\)</span>, <code class="docutils literal notranslate"><span class="pre">latent</span> <span class="pre">r.v.</span></code> 的后验分布 <span class="math notranslate nohighlight">\(q_\phi(z|x_i)\)</span> 都不相同，我们需要学习与样本个数相同数量的后验分布。</p></li>
-</ul>
-<div class="section" id="在Pyro中标记条件独立">
-<h2>在Pyro中标记条件独立<a class="headerlink" href="#在Pyro中标记条件独立" title="Permalink to this headline">¶</a></h2>
-<p>If a user wants to do this sort of thing in Pyro, 则首先需要确保 the model and guide are written in such a way that Pyro can leverage the relevant conditional independencies. Let’s see how this is done. Pyro 提供了两种用于标记条件独立性的语言原语(language primitive): <code class="docutils literal notranslate"><span class="pre">plate</span></code> and <code class="docutils literal notranslate"><span class="pre">markov</span></code>. Let’s start with the simpler of the two.</p>
+<p>Hint for the blew section:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
+    <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;obs_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">pyro</span><span class="o">.</span><span class="n">plate</span><span class="p">(</span><span class="s2">&quot;data_loop&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
+    <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;obs_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+<span class="k">with</span> <span class="n">plate</span><span class="p">(</span><span class="s1">&#39;observe_data&#39;</span><span class="p">):</span>
+    <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s1">&#39;obs&#39;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="Pyro-申明条件独立">
+<h2>Pyro 申明条件独立<a class="headerlink" href="#Pyro-申明条件独立" title="Permalink to this headline">¶</a></h2>
+<p>If a user wants to do this sort of thing in Pyro, 则首先需要确保 the model and guide are written in such a way that Pyro can leverage the relevant conditional independencies. Let’s see how this is done. Pyro 提供了两种用于标记条件独立性的原语(language primitive): <code class="docutils literal notranslate"><span class="pre">plate</span></code> and <code class="docutils literal notranslate"><span class="pre">markov</span></code>. 让我们从第一个原语开始。</p>
 <blockquote>
 <div><p><code class="docutils literal notranslate"><span class="pre">Pyro.plate</span></code>: 从 Sequential <code class="docutils literal notranslate"><span class="pre">plate</span></code> 到 Vectorized <code class="docutils literal notranslate"><span class="pre">plate</span></code></p>
 </div></blockquote>
@@ -278,22 +288,20 @@ observations are conditionally independent given the latents, the log likelihood
     <span class="n">f</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;latent_fairness&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Beta</span><span class="p">(</span><span class="n">alpha0</span><span class="p">,</span> <span class="n">beta0</span><span class="p">))</span>
     <span class="c1"># loop over the observed data using pyro.sample with the obs keyword argument</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
-        <span class="c1"># observe datapoint i using the bernoulli likelihood</span>
         <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;obs_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
 </pre></div>
 </div>
-<p>对于该模型，给定潜变量 <code class="docutils literal notranslate"><span class="pre">latent_fairness</span></code> ，观测样本是条件独立的. To explicitly mark this in Pyro we basically just need to replace the Python builtin <code class="docutils literal notranslate"><span class="pre">range</span></code> with the Pyro construct <code class="docutils literal notranslate"><span class="pre">plate</span></code>:</p>
+<p>对于该模型，给定潜变量 <code class="docutils literal notranslate"><span class="pre">latent_fairness</span></code> ，观测样本是条件独立的. 在 Pyro 中声明这种独立性的方法基本上就是 replace the Python builtin <code class="docutils literal notranslate"><span class="pre">range</span></code> with the Pyro construct <code class="docutils literal notranslate"><span class="pre">plate</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 我们通过 plate 来声明给定潜变量，观测样本之间的条件独立性。</span>
 <span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
     <span class="c1"># sample f from the beta prior</span>
     <span class="n">f</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;latent_fairness&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Beta</span><span class="p">(</span><span class="n">alpha0</span><span class="p">,</span> <span class="n">beta0</span><span class="p">))</span>
     <span class="c1"># loop over the observed data [WE ONLY CHANGE THE NEXT LINE]</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">pyro</span><span class="o">.</span><span class="n">plate</span><span class="p">(</span><span class="s2">&quot;data_loop&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
-        <span class="c1"># observe datapoint i using the bernoulli likelihood</span>
         <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;obs_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
 </pre></div>
 </div>
-<p>我们看到 <code class="docutils literal notranslate"><span class="pre">pyro.plate</span></code> 与 <code class="docutils literal notranslate"><span class="pre">range</span></code> 非常相似，但有一个关键区别：each invocation of <code class="docutils literal notranslate"><span class="pre">plate</span></code> requires the user to provide <strong>a unique name.</strong> The second argument is an integer just like for <code class="docutils literal notranslate"><span class="pre">range</span></code>.</p>
+<p>我们看到 <code class="docutils literal notranslate"><span class="pre">pyro.plate</span></code> 与 <code class="docutils literal notranslate"><span class="pre">range</span></code> 非常相似，但有一个关键区别：每次 <code class="docutils literal notranslate"><span class="pre">plate</span></code> 的调用需要额外指定 <strong>a unique name.</strong></p>
 <p>到目前为止，一切都很好。Pyro现在可以利用给定潜在随机变量下观测值的条件独立性。 But how does this actually work? 基本上，<code class="docutils literal notranslate"><span class="pre">pyro.plate</span></code>是使用上下文管理器(context manager)实现的。 At every execution of the body of the <code class="docutils literal notranslate"><span class="pre">for</span></code> loop we enter a new (conditional) independence context which is then exited at the end of the <code class="docutils literal notranslate"><span class="pre">for</span></code> loop body. Let’s be very explicit about this:</p>
 <ul class="simple">
 <li><p>because each observed <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> statement occurs within a different execution of the body of the <code class="docutils literal notranslate"><span class="pre">for</span></code> loop, Pyro marks each observation as independent</p></li>
@@ -310,18 +318,37 @@ observations are conditionally independent given the latents, the log likelihood
 <blockquote>
 <div><p><code class="docutils literal notranslate"><span class="pre">plate</span></code> 向量化</p>
 </div></blockquote>
-<p>概念上 vectorized <code class="docutils literal notranslate"><span class="pre">plate</span></code> 和 sequential <code class="docutils literal notranslate"><span class="pre">plate</span></code> 是一样的 except that it is a vectorized operation (as <code class="docutils literal notranslate"><span class="pre">torch.arange</span></code> is to <code class="docutils literal notranslate"><span class="pre">range</span></code>). 因此，它有可能实现大幅提速 compared to the explicit <code class="docutils literal notranslate"><span class="pre">for</span></code> loop that appears with sequential <code class="docutils literal notranslate"><span class="pre">plate</span></code>. Let’s see how this looks for our running example. First we need <code class="docutils literal notranslate"><span class="pre">data</span></code> to be in the form of a tensor:</p>
+<p>概念上 vectorized <code class="docutils literal notranslate"><span class="pre">plate</span></code> 和 sequential <code class="docutils literal notranslate"><span class="pre">plate</span></code> 是一样的 except that it is a vectorized operation (as <code class="docutils literal notranslate"><span class="pre">torch.arange</span></code> is to <code class="docutils literal notranslate"><span class="pre">range</span></code>). 因此，它有可能实现大幅提速 compared to the explicit <code class="docutils literal notranslate"><span class="pre">for</span></code> loop that appears with sequential <code class="docutils literal notranslate"><span class="pre">plate</span></code>. Let’s see how this looks for our running example. 首先我们需要把 <code class="docutils literal notranslate"><span class="pre">data</span></code> 写成张量的形式:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
 <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>  <span class="c1"># 6 heads and 4 tails</span>
 </pre></div>
 </div>
-<p>Then we have:</p>
+<p>然后我们标记条件独立性：</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 向量化 plate 能够帮助加速后续相关计算。</span>
 <span class="k">with</span> <span class="n">plate</span><span class="p">(</span><span class="s1">&#39;observe_data&#39;</span><span class="p">):</span>
     <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s1">&#39;obs&#39;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>让我们将其与 sequential <code class="docutils literal notranslate"><span class="pre">plate</span></code> 用法进行 point-by-point 比较： - 这两种模式都要求用户指定一个唯一的 name。 - 注意这个代码块只引入一个观测随机变量(namely <code class="docutils literal notranslate"><span class="pre">obs</span></code>), since the entire tensor is considered at once. - since there is no need for an iterator in this case, 无需指定 <code class="docutils literal notranslate"><span class="pre">plate</span></code> context 所涉及的张量的长度。</p>
+<p>让我们将其与 sequential <code class="docutils literal notranslate"><span class="pre">plate</span></code> 用法进行 point-by-point 比较：</p>
+<ul class="simple">
+<li><p>这两种模式都要求用户指定 <code class="docutils literal notranslate"><span class="pre">plate</span></code> 唯一的 name。</p></li>
+<li><p>注意这个代码块只引入一个观测随机变量(namely <code class="docutils literal notranslate"><span class="pre">obs</span></code>), since the entire tensor is considered at once.</p></li>
+<li><p>since there is no need for an iterator in this case, 无需指定 <code class="docutils literal notranslate"><span class="pre">plate</span></code> context 所涉及的张量的长度。</p></li>
+</ul>
+<p>Hint for the blew section:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">pyro</span><span class="o">.</span><span class="n">plate</span><span class="p">(</span><span class="s2">&quot;data_loop&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
+    <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;obs_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">pyro</span><span class="o">.</span><span class="n">plate</span><span class="p">(</span><span class="s2">&quot;data_loop&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">subsample_size</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+    <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;obs_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+<span class="k">with</span> <span class="n">plate</span><span class="p">(</span><span class="s1">&#39;observe_data&#39;</span><span class="p">):</span>
+    <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s1">&#39;obs&#39;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">plate</span><span class="p">(</span><span class="s1">&#39;observe_data&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">subsample_size</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span> <span class="k">as</span> <span class="n">ind</span><span class="p">:</span>
+    <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s1">&#39;obs&#39;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ind</span><span class="p">))</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="子采样">
 <h2>子采样<a class="headerlink" href="#子采样" title="Permalink to this headline">¶</a></h2>
@@ -331,7 +358,6 @@ observations are conditionally independent given the latents, the log likelihood
 <p>现在，我们知道了如何在Pyro中标记条件独立性。这本身就很有用（请参见SVI第III部分中的 <a class="reference internal" href="svi_part_iii.html"><span class="doc">dependency tracking section</span></a>），但是我们也想进行子采样，以便可以对大型数据集进行 SVI 。根据 <code class="docutils literal notranslate"><span class="pre">model</span></code> 和 <code class="docutils literal notranslate"><span class="pre">guide</span></code> 的结构，Pyro支持几种进行子采样的方法。让我们一一讲解。</p>
 <div class="section" id="自动子采样-with-plate">
 <h3>自动子采样 with <code class="docutils literal notranslate"><span class="pre">plate</span></code><a class="headerlink" href="#自动子采样-with-plate" title="Permalink to this headline">¶</a></h3>
-<p>Let’s look at the simplest case first, in which we get subsampling for free with one or two additional arguments to <code class="docutils literal notranslate"><span class="pre">plate</span></code>:</p>
 <p>首先让我们看一下最简单的情况，在这种情况下，we get subsampling for free with one or two additional arguments to <code class="docutils literal notranslate"><span class="pre">plate</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">pyro</span><span class="o">.</span><span class="n">plate</span><span class="p">(</span><span class="s2">&quot;data_loop&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">subsample_size</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
     <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;obs_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
@@ -339,8 +365,7 @@ observations are conditionally independent given the latents, the log likelihood
 </div>
 <p>That’s all there is to it: we just use the argument <code class="docutils literal notranslate"><span class="pre">subsample_size</span></code>. Whenever we run <code class="docutils literal notranslate"><span class="pre">model()</span></code> we now only evaluate the log likelihood for <code class="docutils literal notranslate"><span class="pre">data</span></code> 5个随机抽取的样本; 此外，对数似然将自动缩放 by the appropriate factor of <span class="math notranslate nohighlight">\(\tfrac{10}{5} = 2\)</span>. 对于向量化 <code class="docutils literal notranslate"><span class="pre">plate</span></code> 如何子采样? 使用方法也完全类似:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">plate</span><span class="p">(</span><span class="s1">&#39;observe_data&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">subsample_size</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span> <span class="k">as</span> <span class="n">ind</span><span class="p">:</span>
-    <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s1">&#39;obs&#39;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">f</span><span class="p">),</span>
-                <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ind</span><span class="p">))</span>
+    <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s1">&#39;obs&#39;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ind</span><span class="p">))</span>
 </pre></div>
 </div>
 <p>重要的是，<code class="docutils literal notranslate"><span class="pre">plate</span></code>现在返回一个索引<code class="docutils literal notranslate"><span class="pre">ind</span></code>的张量，在这种情况下，它的长度为5。请注意，除了参数<code class="docutils literal notranslate"><span class="pre">subsample_size</span></code>外，我们还传递了参数<code class="docutils literal notranslate"><span class="pre">size</span></code>，以便<code class="docutils literal notranslate"><span class="pre">plate</span></code>为获得张量 <code class="docutils literal notranslate"><span class="pre">data</span></code> 的完整大小，以便它可以计算正确的缩放因子。就像sequential <code class="docutils literal notranslate"><span class="pre">plate</span></code> 一样，the user is responsible for selecting the correct datapoints using the indices provided by <code class="docutils literal notranslate"><span class="pre">plate</span></code>.</p>
@@ -348,28 +373,30 @@ observations are conditionally independent given the latents, the log likelihood
 </div>
 <div class="section" id="自定义子采样-with-plate">
 <h3>自定义子采样 with <code class="docutils literal notranslate"><span class="pre">plate</span></code><a class="headerlink" href="#自定义子采样-with-plate" title="Permalink to this headline">¶</a></h3>
-<p>Every time the above <code class="docutils literal notranslate"><span class="pre">model()</span></code> is run <code class="docutils literal notranslate"><span class="pre">plate</span></code> will sample new subsample indices. 由于这种子采样是 stateless，因此可能会导致一些问题：对于足够大的数据集，即使经过大量的迭代，也存在不可忽略的可能性，即从未选择某些数据点。为了避免这种情况，the user can take control of subsampling by making use of the <code class="docutils literal notranslate"><span class="pre">subsample</span></code> argument to <code class="docutils literal notranslate"><span class="pre">plate</span></code>. See <a class="reference external" href="http://docs.pyro.ai/en/dev/primitives.html#pyro.plate">the docs</a> for details.</p>
-<blockquote>
-<div><p><strong>Subsampling when there are only local random variables</strong></p>
-</div></blockquote>
+<p>每次 <code class="docutils literal notranslate"><span class="pre">model()</span></code> 运行的时候，<code class="docutils literal notranslate"><span class="pre">plate</span></code> 都会进行新的子采样。由于这种子采样是 stateless，因此可能会导致一些问题：对于足够大的数据集，即使经过大量的迭代，也存在不可忽略的可能性，即从未选择某些数据点。为了避免这种情况，用户可以通过 <code class="docutils literal notranslate"><span class="pre">plate</span></code> 的参数 <code class="docutils literal notranslate"><span class="pre">subsample</span></code> 来控制子采样的过程。 See <a class="reference external" href="http://docs.pyro.ai/en/dev/primitives.html#pyro.plate">the docs</a> for details.</p>
+<div class="section" id="仅仅只有局部变量时候的子采样">
+<h4>仅仅只有局部变量时候的子采样<a class="headerlink" href="#仅仅只有局部变量时候的子采样" title="Permalink to this headline">¶</a></h4>
 <p>我们考虑具备如下联合概率密度，也就是只有局部随机变量的 <code class="docutils literal notranslate"><span class="pre">model</span></code>:</p>
 <div class="math notranslate nohighlight">
 \[p({\bf x}, {\bf z}) = \prod_{i=1}^N p({\bf x}_i | {\bf z}_i) p({\bf z}_i)\]</div>
-<p>For a model with this dependency structure the scale factor introduced by subsampling scales all the terms in the ELBO by the same amount. 例如，vanilla VAE 就是这种情况。 这就解释了为什么对于VAE，user 可以完全控制子采样并将 mini-batches 直接传递给 model and guide; <code class="docutils literal notranslate"><span class="pre">plate</span></code> is still used, but <code class="docutils literal notranslate"><span class="pre">subsample_size</span></code> and <code class="docutils literal notranslate"><span class="pre">subsample</span></code> are not. To see how this looks in detail, see the <a class="reference internal" href="vae.html"><span class="doc">VAE tutorial</span></a>.</p>
-<blockquote>
-<div><p><strong>Subsampling when there are both global and local random variables</strong></p>
-</div></blockquote>
-<p>在掷硬币的例子中 <code class="docutils literal notranslate"><span class="pre">plate</span></code> 只出现在 <code class="docutils literal notranslate"><span class="pre">model</span></code> 而没有出现在 <code class="docutils literal notranslate"><span class="pre">guide</span></code> 中, since the only thing being subsampled was the observations. 让我们看一个更复杂的例子，也就是 <code class="docutils literal notranslate"><span class="pre">plate</span></code> 同时出现在 <code class="docutils literal notranslate"><span class="pre">model</span></code> 而没有出现在 <code class="docutils literal notranslate"><span class="pre">guide</span></code>中. To make things simple let’s keep the discussion somewhat abstract and avoid writing a complete model and guide.</p>
+<p>For a model with this dependency structure the scale factor introduced by subsampling scales all the terms in the ELBO by the same amount. 例如，vanilla VAE 就是这种情况。 这就解释了为什么对于VAE，user 可以完全控制子采样并将 mini-batches 直接传递给 <code class="docutils literal notranslate"><span class="pre">model</span></code> 和 <code class="docutils literal notranslate"><span class="pre">guide</span></code>; <code class="docutils literal notranslate"><span class="pre">plate</span></code> is still used, but <code class="docutils literal notranslate"><span class="pre">subsample_size</span></code> and <code class="docutils literal notranslate"><span class="pre">subsample</span></code> are not. To see how this looks in detail, see the <a class="reference internal" href="vae.html"><span class="doc">VAE tutorial</span></a>.</p>
+</div>
+<div class="section" id="同时存在局部和全局变量时候的子采样">
+<h4>同时存在局部和全局变量时候的子采样<a class="headerlink" href="#同时存在局部和全局变量时候的子采样" title="Permalink to this headline">¶</a></h4>
+<p>在掷硬币的例子中，因为唯一要抽样的是观测变量， 所以 <code class="docutils literal notranslate"><span class="pre">plate</span></code> 只出现在 <code class="docutils literal notranslate"><span class="pre">model</span></code> 而没有出现在 <code class="docutils literal notranslate"><span class="pre">guide</span></code> 中。让我们看一个更复杂的例子，也就是 <code class="docutils literal notranslate"><span class="pre">plate</span></code> 出现在 <code class="docutils literal notranslate"><span class="pre">model</span></code> 而没有出现在 <code class="docutils literal notranslate"><span class="pre">guide</span></code>中. To make things simple let’s keep the discussion somewhat abstract and avoid writing a complete model and guide.</p>
 <p>考虑一个具备如下分布的 <code class="docutils literal notranslate"><span class="pre">model</span></code>:</p>
 <div class="math notranslate nohighlight">
 \[ p({\bf x}, {\bf z}, \beta) = p(\beta)
 \prod_{i=1}^N p({\bf x}_i | {\bf z}_i) p({\bf z}_i | \beta)\]</div>
-<p>There are <span class="math notranslate nohighlight">\(N\)</span> observations <span class="math notranslate nohighlight">\(\{ {\bf x}_i \}\)</span> and <span class="math notranslate nohighlight">\(N\)</span> local latent random variables <span class="math notranslate nohighlight">\(\{ {\bf z}_i \}\)</span>. There is also a global latent random variable <span class="math notranslate nohighlight">\(\beta\)</span>. 我们的 <code class="docutils literal notranslate"><span class="pre">gude</span></code> 将被分解为</p>
+<p>这里有 <span class="math notranslate nohighlight">\(N\)</span> 个观测变量 <span class="math notranslate nohighlight">\(\{ {\bf x}_i \}\)</span> 和 <span class="math notranslate nohighlight">\(N\)</span> 个局部潜变量 <span class="math notranslate nohighlight">\(\{ {\bf z}_i \}\)</span>，还有一个全局潜变量 <span class="math notranslate nohighlight">\(\beta\)</span>。 我们的 <code class="docutils literal notranslate"><span class="pre">gude</span></code> 将被分解为</p>
 <div class="math notranslate nohighlight">
 \[q({\bf z}, \beta) = q(\beta) \prod_{i=1}^N q({\bf z}_i | \beta, \lambda_i)\]</div>
-<p>Here we’ve been explicit about introducing <span class="math notranslate nohighlight">\(N\)</span> local variational parameters <span class="math notranslate nohighlight">\(\{\lambda_i \}\)</span>, while the other variational parameters are left implicit. Both the model and guide have conditional independencies. In particular, - on the model side, given the <span class="math notranslate nohighlight">\(\{ {\bf z}_i \}\)</span> the observations <span class="math notranslate nohighlight">\(\{ {\bf x}_i \}\)</span> are independent. In addition, given <span class="math notranslate nohighlight">\(\beta\)</span> the latent random variables <span class="math notranslate nohighlight">\(\{\bf {z}_i \}\)</span> are independent. - On the guide side, given the variational
-parameters <span class="math notranslate nohighlight">\(\{\lambda_i \}\)</span> and <span class="math notranslate nohighlight">\(\beta\)</span> the latent random variables <span class="math notranslate nohighlight">\(\{\bf {z}_i \}\)</span> are independent.</p>
-<p>为了在 Pyro 中标记这些条件独立性和进行子采样, 我们需要在 model and guide 中都使用 <code class="docutils literal notranslate"><span class="pre">plate</span></code>. Let’s sketch out the basic logic using sequential <code class="docutils literal notranslate"><span class="pre">plate</span></code> (a more complete piece of code would include <code class="docutils literal notranslate"><span class="pre">pyro.param</span></code> statements, etc.). First, the model:</p>
+<p>Here we’ve been explicit about introducing <span class="math notranslate nohighlight">\(N\)</span> local variational parameters <span class="math notranslate nohighlight">\(\{\lambda_i \}\)</span>, while the other variational parameters are left implicit. 模型分布都指导分布都具备条件独立性结构，具体来说就是：</p>
+<ul class="simple">
+<li><p>在模型分布中, 给定局部变量 <span class="math notranslate nohighlight">\(\{ {\bf z}_i \}\)</span> 观测变量 <span class="math notranslate nohighlight">\(\{ {\bf x}_i \}\)</span> 是条件独立的. 另外，给定 <span class="math notranslate nohighlight">\(\beta\)</span> 潜变量 <span class="math notranslate nohighlight">\(\{\bf {z}_i \}\)</span> 是条件独立的.</p></li>
+<li><p>在指导分布中, 给定局部变分参数 <span class="math notranslate nohighlight">\(\{\lambda_i \}\)</span> 和全部变量 <span class="math notranslate nohighlight">\(\beta\)</span> 潜变量 <span class="math notranslate nohighlight">\(\{\bf {z}_i \}\)</span> 是条件独立的.</p></li>
+</ul>
+<p>为了在 Pyro 中标记这些条件独立性和进行子采样, 我们需要在 <code class="docutils literal notranslate"><span class="pre">model</span></code> and <code class="docutils literal notranslate"><span class="pre">guide</span></code> 中都使用 <code class="docutils literal notranslate"><span class="pre">plate</span></code>. Let’s sketch out the basic logic using sequential <code class="docutils literal notranslate"><span class="pre">plate</span></code> (a more complete piece of code would include <code class="docutils literal notranslate"><span class="pre">pyro.param</span></code> statements, etc.). 首先定义模型分布:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
     <span class="n">beta</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;beta&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span> <span class="c1"># sample the global RV</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">pyro</span><span class="o">.</span><span class="n">plate</span><span class="p">(</span><span class="s2">&quot;locals&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
@@ -380,7 +407,7 @@ parameters <span class="math notranslate nohighlight">\(\{\lambda_i \}\)</span> 
         <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;obs_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">dist</span><span class="o">.</span><span class="n">MyDist</span><span class="p">(</span><span class="n">theta_i</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
 </pre></div>
 </div>
-<p>Note that in contrast to our running coin flip example, here we have <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> statements both inside and outside of the <code class="docutils literal notranslate"><span class="pre">plate</span></code> loop. Next the guide:</p>
+<p>对比前面掷硬币的例子，这里 <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> 同时出现在 <code class="docutils literal notranslate"><span class="pre">plate</span></code> loop 的里面和外面. 接下来是指导分布:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">guide</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
     <span class="n">beta</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;beta&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span> <span class="c1"># sample the global RV</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">pyro</span><span class="o">.</span><span class="n">plate</span><span class="p">(</span><span class="s2">&quot;locals&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">subsample_size</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
@@ -388,7 +415,15 @@ parameters <span class="math notranslate nohighlight">\(\{\lambda_i \}\)</span> 
         <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;z_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="o">...</span><span class="p">,</span> <span class="n">lambda_i</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Note that crucially the indices will only be subsampled once in the guide; the Pyro backend makes sure that the same set of indices are used during execution of the model. For this reason <code class="docutils literal notranslate"><span class="pre">subsample_size</span></code> only needs to be specified in the guide.</p>
+<p>请注意，是 <code class="docutils literal notranslate"><span class="pre">guide()</span></code> 的索引只会被子抽样一次，Pyro 后端确保在执行 <code class="docutils literal notranslate"><span class="pre">model()</span></code> 期间使用相同的索引集，因此只需在 <code class="docutils literal notranslate"><span class="pre">guide()</span></code> 中指定 <code class="docutils literal notranslate"><span class="pre">subsample_size</span></code>。</p>
+</div>
+<div class="section" id="More-about-plate">
+<h4>More about <code class="docutils literal notranslate"><span class="pre">plate</span></code><a class="headerlink" href="#More-about-plate" title="Permalink to this headline">¶</a></h4>
+<blockquote>
+<div><p>Tensor shapes and vectorized <code class="docutils literal notranslate"><span class="pre">plate</span></code></p>
+</div></blockquote>
+<p>在本教程中，<code class="docutils literal notranslate"><span class="pre">pyro.plate</span></code> 的使用仅限于相对简单的情况。 For example, none of the <code class="docutils literal notranslate"><span class="pre">plate</span></code>s were nested inside of other <code class="docutils literal notranslate"><span class="pre">plate</span></code>s. In order to make full use of <code class="docutils literal notranslate"><span class="pre">plate</span></code>, the user must be careful to use Pyro’s tensor shape semantics. For a discussion see the <a class="reference internal" href="tensor_shapes.html"><span class="doc">tensor shapes tutorial</span></a>.</p>
+</div>
 </div>
 </div>
 <div class="section" id="Amortization">
@@ -396,24 +431,17 @@ parameters <span class="math notranslate nohighlight">\(\{\lambda_i \}\)</span> 
 <blockquote>
 <div><p>变分自编码器(VAE)的由来</p>
 </div></blockquote>
-<p>Let’s again consider a model with global and local latent random variables and local variational parameters:</p>
+<p>让我们再次考虑具有全局和局部潜变量的 <code class="docutils literal notranslate"><span class="pre">model()</span></code>，以及局部变分参数的 <code class="docutils literal notranslate"><span class="pre">guide()</span></code>：</p>
 <div class="math notranslate nohighlight">
 \[ p({\bf x}, {\bf z}, \beta) = p(\beta)
 \prod_{i=1}^N p({\bf x}_i | {\bf z}_i) p({\bf z}_i | \beta)  \qquad \qquad
 q({\bf z}, \beta) = q(\beta) \prod_{i=1}^N q({\bf z}_i | \beta, \lambda_i)\]</div>
-<p>For small to medium-sized <span class="math notranslate nohighlight">\(N\)</span> using local variational parameters like this can be a good approach. If <span class="math notranslate nohighlight">\(N\)</span> is large, however, the fact that the space we’re doing optimization over grows with <span class="math notranslate nohighlight">\(N\)</span> can be a real problem. One way to avoid this nasty growth with the size of the dataset is <em>amortization</em>.</p>
-<p>This works as follows. Instead of introducing local variational parameters, we’re going to learn a single parametric function <span class="math notranslate nohighlight">\(f(\cdot)\)</span> and work with a variational distribution that has the form</p>
+<p>对于样本数 <span class="math notranslate nohighlight">\(N\)</span> 的情况，使用局部变分参数可以是个好方法。 但是当 <span class="math notranslate nohighlight">\(N\)</span> 很大的时候, the fact that the space we’re doing optimization over grows with <span class="math notranslate nohighlight">\(N\)</span> can be a real problem. 一种避免这个问题的办法是 <em>amortization</em>.</p>
+<p>这种方法是这样的。 不同于引入局部变分参数 <span class="math notranslate nohighlight">\(\lambda_i\)</span>, 我们学习一个单参数函数 <span class="math notranslate nohighlight">\(f(\cdot)\)</span>，定义如下形式的变分分布：</p>
 <div class="math notranslate nohighlight">
-\[q(\beta) \prod_{n=1}^N q({\bf z}_i | f({\bf x}_i))\]</div>
-<p>The function <span class="math notranslate nohighlight">\(f(\cdot)\)</span>—which basically maps a given observation to a set of variational parameters tailored to that datapoint—will need to be sufficiently rich to capture the posterior accurately, but now we can handle large datasets without having to introduce an obscene number of variational parameters. This approach has other benefits too: for example, during learning <span class="math notranslate nohighlight">\(f(\cdot)\)</span> effectively allows us to share statistical power among different datapoints. Note that this is
-precisely the approach used in the <a class="reference internal" href="vae.html"><span class="doc">VAE</span></a>.</p>
-</div>
-<div class="section" id="More-about-plate">
-<h2>More about <code class="docutils literal notranslate"><span class="pre">plate</span></code><a class="headerlink" href="#More-about-plate" title="Permalink to this headline">¶</a></h2>
-<blockquote>
-<div><p>Tensor shapes and vectorized <code class="docutils literal notranslate"><span class="pre">plate</span></code></p>
-</div></blockquote>
-<p>The usage of <code class="docutils literal notranslate"><span class="pre">pyro.plate</span></code> in this tutorial was limited to relatively simple cases. For example, none of the <code class="docutils literal notranslate"><span class="pre">plate</span></code>s were nested inside of other <code class="docutils literal notranslate"><span class="pre">plate</span></code>s. In order to make full use of <code class="docutils literal notranslate"><span class="pre">plate</span></code>, the user must be careful to use Pyro’s tensor shape semantics. For a discussion see the <a class="reference internal" href="tensor_shapes.html"><span class="doc">tensor shapes tutorial</span></a>.</p>
+\[q(\beta) \prod_{n=1}^N q({\bf z}_i | \beta, f({\bf x}_i))\]</div>
+<p>The function <span class="math notranslate nohighlight">\(f(\cdot)\)</span>— which basically maps a given observation to a set of variational parameters tailored to that datapoint— will need to be sufficiently rich to capture the posterior accurately, but now we can handle large datasets without having to introduce an obscene number of variational parameters. 这种方法也有其他好处： for example, during learning <span class="math notranslate nohighlight">\(f(\cdot)\)</span> effectively allows us to share statistical power among different datapoints. 这正是 <a class="reference internal" href="vae.html"><span class="doc">VAE</span></a>
+中使用的方法。</p>
 </div>
 <div class="section" id="参考文献">
 <h2>参考文献<a class="headerlink" href="#参考文献" title="Permalink to this headline">¶</a></h2>
@@ -433,7 +461,7 @@ precisely the approach used in the <a class="reference internal" href="vae.html"
         <a href="svi_part_iii.html" class="btn btn-neutral float-right" title="SVI Part III: ELBO 梯度估计" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="svi_part_i.html" class="btn btn-neutral float-left" title="SVI Part I: Pyro 随机变分推断基础" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="svi_part_i.html" class="btn btn-neutral float-left" title="SVI Part I: 随机变分推断基础" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

@@ -93,15 +93,15 @@
               <p class="caption"><span class="caption-text">Introduction:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Pyro 模型介绍</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#原始随机函数">原始随机函数</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#初等随机函数">初等随机函数</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#一个简单模型">一个简单模型</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#The-pyro.sample-Primitive">The <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> Primitive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pyro.sample-原语"><code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> 原语</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#通用概率编程">通用概率编程</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#下一步？">下一步？</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="intro_part_ii.html">Pyro 推断简介</a></li>
-<li class="toctree-l1"><a class="reference internal" href="svi_part_i.html">SVI Part I: Pyro 随机变分推断基础</a></li>
+<li class="toctree-l1"><a class="reference internal" href="svi_part_i.html">SVI Part I: 随机变分推断基础</a></li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_ii.html">SVI Part II: 条件独立, 子采样和 Amortization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_iii.html">SVI Part III: ELBO 梯度估计</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中模型和数据维度</a></li>
@@ -464,16 +464,16 @@ div.rendered_html tbody tr:hover {
     text-align: unset;
 }
 </style>
-<p><strong>知识点</strong>: Stochastic function 从数学上来说是随机泛函。Pyro 样本相对于 Pytorch 样本最大的不同之处是它们有 names, Pyro 的 backend 使用这些 names to uniquely identify sample statements and change their behavior at runtime depending on how the enclosing stochastic function is being used.</p>
+<p><strong>知识点</strong>: Stochastic function 从数学上来说是随机泛函。Pyro 样本相对于 Pytorch 样本最大的不同之处是它们有 names, Pyro 的后段使用这些 names 来唯一的识别抽样语句 and change their behavior at runtime depending on how the enclosing stochastic function is being used.</p>
 <div class="section" id="Pyro-模型介绍">
 <h1>Pyro 模型介绍<a class="headerlink" href="#Pyro-模型介绍" title="Permalink to this headline">¶</a></h1>
-<p>概率编程的基本单元是 stochastic function, This is an arbitrary Python callable that combines two ingredients:</p>
+<p>概率编程的基本单元是随机函数(stochastic function), 它是包含下面两种成分的任意 Python 可调用对象：</p>
 <ul class="simple">
-<li><p>deterministic Python code; and</p></li>
-<li><p>primitive stochastic functions that call a random number generator</p></li>
+<li><p>确定性 Python 代码</p></li>
+<li><p>初等随机函数 that call a random number generator</p></li>
 </ul>
-<p>具体来说，随机函数可以是 any Python object with a <code class="docutils literal notranslate"><span class="pre">__call__()</span></code> method, like a function, a method, or a PyTorch <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p>
-<p>在整个教程和文档中，由于随机函数可用于表示 simplified or abstract descriptions of 数据生成过程，因此我们通常将其称为 stochastic functions <em>models</em>。将 models 表示为 stochastic functions 意味着像常规的 Python 可调用对象一样, models can be composed, reused, imported, and serialized.</p>
+<p>具体来说，随机函数可以是任何具有方法 <code class="docutils literal notranslate"><span class="pre">__call__()</span></code> 的对象, like a function, a method, or a PyTorch <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p>
+<p>在整个教程和文档中，由于随机函数可用于表示数据生成过程的简化或者抽象描述，因此我们通常将其称为 stochastic functions <em>models</em>。将 models 表示为随机函数意味着像常规的 Python 可调用对象一样, models can be composed, reused, imported, and serialized.</p>
 <p>Table of Contents</p>
 <ul class="simple">
 <li><p><a class="reference external" href="#原始随机函数">原始随机函数</a></p></li>
@@ -482,7 +482,7 @@ div.rendered_html tbody tr:hover {
 <li><p><a class="reference external" href="#通用概率编程">通用概率编程</a></p></li>
 </ul>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -493,12 +493,12 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="section" id="原始随机函数">
-<h2>原始随机函数<a class="headerlink" href="#原始随机函数" title="Permalink to this headline">¶</a></h2>
-<p>原始随机函数(Primitive stochastic functions, or distributions) 是一类重要的随机函数，我们可以为其显式计算概率 of the outputs given the inputs. As of PyTorch 0.4 and Pyro 0.2, Pyro uses PyTorch’s <a class="reference external" href="http://pytorch.org/docs/master/distributions.html">distribution library</a>. You can also create custom distributions using <a class="reference external" href="http://pytorch.org/docs/master/distributions.html#module-torch.distributions.transforms">transforms</a>.</p>
-<p>使用 primitive stochastic functions 很简单. 例如, to draw a sample <code class="docutils literal notranslate"><span class="pre">x</span></code> from 标准正态分布 <span class="math notranslate nohighlight">\(\mathcal{N}(0,1)\)</span> we do the following:</p>
+<div class="section" id="初等随机函数">
+<h2>初等随机函数<a class="headerlink" href="#初等随机函数" title="Permalink to this headline">¶</a></h2>
+<p>初等随机函数(Primitive stochastic functions, or distributions) 是一类重要的随机函数，我们可以为其显式计算某个输入下得到某个输出的概率. As of PyTorch 0.4 and Pyro 0.2, Pyro uses PyTorch’s <a class="reference external" href="http://pytorch.org/docs/master/distributions.html">distribution library</a>. You can also create custom distributions using <a class="reference external" href="http://pytorch.org/docs/master/distributions.html#module-torch.distributions.transforms">transforms</a>.</p>
+<p>使用初等随机函数很简单. 例如, 我们可以使用如下代码从标准正态分布 <span class="math notranslate nohighlight">\(\mathcal{N}(0,1)\)</span> 抽取一个样本:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -520,12 +520,12 @@ sample tensor(-1.3905)
 log prob tensor(-1.8857)
 </pre></div></div>
 </div>
-<p>Here, <code class="docutils literal notranslate"><span class="pre">torch.distributions.Normal</span></code> is an instance of the <code class="docutils literal notranslate"><span class="pre">Distribution</span></code> class that takes parameters and provides <strong>sample and score methods</strong>. Pyro’s distribution library <code class="docutils literal notranslate"><span class="pre">pyro.distributions</span></code> is a thin wrapper around <code class="docutils literal notranslate"><span class="pre">torch.distributions</span></code> 因为我们想利用 PyTorch’s fast tensor math and autograd capabilities during inference.</p>
+<p>Here, <code class="docutils literal notranslate"><span class="pre">torch.distributions.Normal</span></code> is an instance of the <code class="docutils literal notranslate"><span class="pre">Distribution</span></code> class that takes parameters and provides <strong>sample and score methods</strong>. 因为 Pyro’s 的分布库 <code class="docutils literal notranslate"><span class="pre">pyro.distributions</span></code> 是 Pytorch 分布库 <code class="docutils literal notranslate"><span class="pre">torch.distributions</span></code> 的一个简单打包，所以我们可以在推断过程中利用 PyTorch’s 快速张量计算和自动微分的能力.</p>
 </div>
 <div class="section" id="一个简单模型">
 <h2>一个简单模型<a class="headerlink" href="#一个简单模型" title="Permalink to this headline">¶</a></h2>
-<p>所有的 probalistic programs 是通过 primitive functions and deterministic computation 组合得到的。我们最终的目的是要是用 probablistic programming 来模拟真实世界，我们现在从一个具体的例子出发。</p>
-<p>现在我们有一堆关于每天平均气温和 cloud cover 的数据。我们想 reason about how temperature interacts with whether it was sunny or cloudy. 如下的简单随机函数描述了数据的生成过程：</p>
+<p>所有的概率程序(probablistic programs)是通过初等随机函数和确定性计算组合得到的。我们最终的目的是要是用概率编程(probablistic programming)来模拟真实世界，我们现在从一个具体的例子出发。</p>
+<p>现在我们有一堆关于每天平均气温和是否阴天(cloud cover)的数据。我们想 reason about how temperature interacts with whether it was sunny or cloudy. 如下的简单随机函数描述了数据的生成过程：</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
 </pre></div>
@@ -569,19 +569,47 @@ log prob tensor(-1.8857)
 (&#39;cloudy&#39;, 46.847618103027344)
 </pre></div></div>
 </div>
-<p>Let’s go through this line-by-line. First, in lines 2 we define a binary random variable ‘cloudy’, which is given by a draw from the Bernoulli distribution with a parameter of <code class="docutils literal notranslate"><span class="pre">0.3</span></code>. Since the Bernoulli distributions return <code class="docutils literal notranslate"><span class="pre">0</span></code>s or <code class="docutils literal notranslate"><span class="pre">1</span></code>s, in line 3 we convert the value <code class="docutils literal notranslate"><span class="pre">cloudy</span></code> to a string so that return values of <code class="docutils literal notranslate"><span class="pre">weather</span></code> are easier to parse. So according to this model 30% of the time it’s cloudy and 70% of the time it’s sunny.</p>
-<p>In lines 4-5 we define the parameters we’re going to use to sample the temperature in lines 6. These parameters depend on the particular value of <code class="docutils literal notranslate"><span class="pre">cloudy</span></code> we sampled in line 2. For example, the mean temperature is 55 degrees (Fahrenheit) on cloudy days and 75 degrees on sunny days. Finally we return the two values <code class="docutils literal notranslate"><span class="pre">cloudy</span></code> and <code class="docutils literal notranslate"><span class="pre">temp</span></code> in line 7.</p>
-<p>但是，<code class="docutils literal notranslate"><span class="pre">weather</span></code> 完全独立于 Pyro - it only calls PyTorch. 我们需要将其转换为 Pyro 程序 if we want to use this model for anything other than sampling fake data. 那么，这个模型除生成假数据还应该能干嘛呢？我们希望 can be composed, reused, imported, and serialized.</p>
-</div>
-<div class="section" id="The-pyro.sample-Primitive">
-<h2>The <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> Primitive<a class="headerlink" href="#The-pyro.sample-Primitive" title="Permalink to this headline">¶</a></h2>
-<p>为了将 <code class="docutils literal notranslate"><span class="pre">weather</span></code> 转换为 Pyro 程序, 我们将会 replace the <code class="docutils literal notranslate"><span class="pre">torch.distribution</span></code>s with <code class="docutils literal notranslate"><span class="pre">pyro.distribution</span></code>s and the <code class="docutils literal notranslate"><span class="pre">.sample()</span></code> and <code class="docutils literal notranslate"><span class="pre">.rsample()</span></code> calls with calls to <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code>(Pyro的核心语言原语 language primitive 之一). Using <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> is as simple as calling a primitive stochastic function with 一个重要的区别:</p>
+<p>让我们一行行的来看这段代码。 首先, 在第2行 we define a binary random variable ‘cloudy’, which is given by a draw from the Bernoulli distribution with a parameter of <code class="docutils literal notranslate"><span class="pre">0.3</span></code>. Since the Bernoulli distributions return <code class="docutils literal notranslate"><span class="pre">0</span></code>s or <code class="docutils literal notranslate"><span class="pre">1</span></code>s, 在第3行 we convert the value <code class="docutils literal notranslate"><span class="pre">cloudy</span></code> to a string so that return values of <code class="docutils literal notranslate"><span class="pre">weather</span></code> are easier to parse. So according to this model 30% of the time it’s cloudy and 70% of the time it’s sunny.</p>
+<p>在第4-5行 we define the parameters we’re going to use to sample the temperature in lines 6. These parameters depend on the particular value of <code class="docutils literal notranslate"><span class="pre">cloudy</span></code> we sampled in line 2. For example, the mean temperature is 55 degrees (Fahrenheit) on cloudy days and 75 degrees on sunny days. Finally we return the two values <code class="docutils literal notranslate"><span class="pre">cloudy</span></code> and <code class="docutils literal notranslate"><span class="pre">temp</span></code> in line 7.</p>
+<p>但是，这个函数 <code class="docutils literal notranslate"><span class="pre">weather</span></code> 完全与 Pyro 无关 - it only calls PyTorch. 我们需要将其转换为 Pyro 程序 if we want to use this model for anything other than sampling fake data. (那么，这个模型除生成假数据还应该能干嘛呢？我们希望 can be composed, reused, imported, and serialized.)</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">x</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;my_sample&quot;</span><span class="p">,</span> <span class="n">pyro</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">scale</span><span class="p">))</span>
+<span></span><span class="c1"># Hint</span>
+<span class="k">def</span> <span class="nf">weather</span><span class="p">():</span>
+    <span class="n">cloudy</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s1">&#39;cloudy&#39;</span><span class="p">,</span> <span class="n">pyro</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="mf">0.3</span><span class="p">))</span>
+    <span class="n">cloudy</span> <span class="o">=</span> <span class="s1">&#39;cloudy&#39;</span> <span class="k">if</span> <span class="n">cloudy</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">==</span> <span class="mf">1.0</span> <span class="k">else</span> <span class="s1">&#39;sunny&#39;</span>
+    <span class="n">mean_temp</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;cloudy&#39;</span><span class="p">:</span> <span class="mf">55.0</span><span class="p">,</span> <span class="s1">&#39;sunny&#39;</span><span class="p">:</span> <span class="mf">75.0</span><span class="p">}[</span><span class="n">cloudy</span><span class="p">]</span>
+    <span class="n">scale_temp</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;cloudy&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span> <span class="s1">&#39;sunny&#39;</span><span class="p">:</span> <span class="mf">15.0</span><span class="p">}[</span><span class="n">cloudy</span><span class="p">]</span>
+    <span class="n">temp</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s1">&#39;temp&#39;</span><span class="p">,</span> <span class="n">pyro</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">mean_temp</span><span class="p">,</span> <span class="n">scale_temp</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">cloudy</span><span class="p">,</span> <span class="n">temp</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+<span class="n">weather</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+(&#39;cloudy&#39;, 46.847618103027344)
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="pyro.sample-原语">
+<h2><code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> 原语<a class="headerlink" href="#pyro.sample-原语" title="Permalink to this headline">¶</a></h2>
+<p>为了将 <code class="docutils literal notranslate"><span class="pre">weather</span></code> 转换为 Pyro 程序, 我们将会用 <code class="docutils literal notranslate"><span class="pre">pyro.distribution</span></code> 替代<code class="docutils literal notranslate"><span class="pre">torch.distribution</span></code>s， 而且用 calls to <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> 来替代 calls to <code class="docutils literal notranslate"><span class="pre">.sample()</span></code> and <code class="docutils literal notranslate"><span class="pre">.rsample()</span></code>. 使用 <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> 就像调用初等随机函数一样简单，但是有一个重要的区别:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># `pyro.sample` 是 Pyro 的核心原语(language primitive)之一</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;my_sample&quot;</span><span class="p">,</span> <span class="n">pyro</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">scale</span><span class="p">))</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -591,10 +619,10 @@ log prob tensor(-1.8857)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-tensor(0.9544)
+tensor(1.2917)
 </pre></div></div>
 </div>
-<p>Just like a direct call to <code class="docutils literal notranslate"><span class="pre">torch.distributions.Normal().rsample()</span></code>, this returns a sample from the unit normal distribution. 最关键的区别是该样本是有 <strong>names</strong> 的. Pyro的后端使用这些 <strong>names</strong></p>
+<p>就像 <code class="docutils literal notranslate"><span class="pre">torch.distributions.Normal().rsample()</span></code> 一样, 它返回一个标准正态分布的样本。但是最关键的区别是该样本是有 <strong>names</strong> 的. Pyro的后端使用这些 <strong>names</strong></p>
 <ul class="simple">
 <li><p>to uniquely identify sample statements and</p></li>
 <li><p><em>change their behavior at runtime</em> depending on how the enclosing stochastic function is being used.</p></li>
@@ -629,12 +657,13 @@ tensor(0.9544)
 (&#39;cloudy&#39;, 54.18292999267578)
 </pre></div></div>
 </div>
-<p>Procedurally，<code class="docutils literal notranslate"><span class="pre">weather()</span></code> 仍然是一个non-deterministic Python callable that returns two random samples. Because the randomness is now invoked with <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code>, however, 它远不止于此。具体来说，<code class="docutils literal notranslate"><span class="pre">weather()</span></code> specifies a joint probability distribution over two named random variables: <code class="docutils literal notranslate"><span class="pre">cloudy</span></code> and <code class="docutils literal notranslate"><span class="pre">temp</span></code>. As such, it defines a probabilistic model that we can reason about using the techniques of probability
-theory.例如，我们可能会问：如果我观察到70度的温度，多云的可能性有多大？下一个教程将讨论如何提出和回答这类问题。</p>
+<p>Procedurally，<code class="docutils literal notranslate"><span class="pre">weather()</span></code> 仍然是一个non-deterministic Python callable that returns two random samples. Because the randomness is now invoked with <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code>, however, 它远不止于此。具体来说，<code class="docutils literal notranslate"><span class="pre">weather()</span></code> 定义了两个有名字的随机变量的联合分布: <code class="docutils literal notranslate"><span class="pre">cloudy</span></code> 和 <code class="docutils literal notranslate"><span class="pre">temp</span></code>. 也就是说我们定义了一个可以用于推理的概率模型 using the techniques of probability theory. 例如，我们可能会问：如果我观察到70度的温度，多云的可能性有多大？下一个教程将讨论如何提出和回答这类问题。</p>
 </div>
 <div class="section" id="通用概率编程">
 <h2>通用概率编程<a class="headerlink" href="#通用概率编程" title="Permalink to this headline">¶</a></h2>
-<p>Universality: Stochastic Recursion, Higher-order Stochastic Functions, and Random Control Flow</p>
+<ul class="simple">
+<li><p>Universality: Stochastic Recursion, Higher-order Stochastic Functions, and Random Control Flow</p></li>
+</ul>
 <p>现在我们已经看到了如何定义一个简单的模型。Building off of it is easy. For example:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
@@ -696,10 +725,10 @@ theory.例如，我们可能会问：如果我观察到70度的温度，多云�
 </pre></div>
 </div>
 <div class="output_area docutils container">
-<img alt="_images/intro_part_i_23_0.svg" src="_images/intro_part_i_23_0.svg" /></div>
+<img alt="_images/intro_part_i_24_0.svg" src="_images/intro_part_i_24_0.svg" /></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -709,8 +738,8 @@ theory.例如，我们可能会问：如果我观察到70度的温度，多云�
     <span class="n">y</span> <span class="o">=</span> <span class="n">z1</span> <span class="o">*</span> <span class="n">z2</span>
     <span class="k">return</span> <span class="n">y</span>
 
-<span class="c1"># 可以把 loc 看成某个固定的输入随机函数 mu_latent</span>
-<span class="c1"># 从而得到一个输出是正态随机函数，而不是数值的随机函数。</span>
+<span class="c1"># Input: None</span>
+<span class="c1"># Output: 带参数随机函数 p(y;scale)</span>
 <span class="k">def</span> <span class="nf">make_normal_normal</span><span class="p">():</span>
     <span class="n">mu_latent</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;mu_latent&quot;</span><span class="p">,</span> <span class="n">pyro</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
     <span class="n">fn</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">scale</span><span class="p">:</span> <span class="n">normal_product</span><span class="p">(</span><span class="n">mu_latent</span><span class="p">,</span> <span class="n">scale</span><span class="p">)</span>
@@ -725,16 +754,15 @@ theory.例如，我们可能会问：如果我观察到70度的温度，多云�
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-tensor(-0.0618)
+tensor(-0.2582)
 </pre></div></div>
 </div>
-<p>Here <code class="docutils literal notranslate"><span class="pre">make_normal_normal()</span></code> is a stochastic function that takes one argument and which, upon execution, generates three named random variables.</p>
-<p>The fact that Pyro supports arbitrary Python code like this—iteration, recursion, higher-order functions, etc.—in conjuction with random control flow means that Pyro 随机函数是 <em>universal</em> ，即它们可用于表示任何可计算的概率分布。 正如我们将在后续教程中看到的那样，它难以置信的强大。</p>
-<p>值得强调的是 that this is one reason why Pyro is built on top of PyTorch: 动态计算图 are an important ingredient in allowing for universal models that can benefit from GPU-accelerated tensor math.</p>
+<p>这里 <code class="docutils literal notranslate"><span class="pre">make_normal_normal()</span></code> 是一个参数为 ‘scale’ 的随机函数，在其执行过程中，产生了三个有名字的随机变量。</p>
+<p>The fact that Pyro supports arbitrary Python code like this—iteration, recursion, higher-order functions, etc.—in conjuction with random control flow 意味着 Pyro 随机函数是通用概率编程语言 (Universal Probabilistic Programming) ，即它们可用于表示任何可计算的概率分布。 正如我们将在后续教程中看到的那样，它难以置信的强大。</p>
 </div>
 <div class="section" id="下一步？">
 <h2>下一步？<a class="headerlink" href="#下一步？" title="Permalink to this headline">¶</a></h2>
-<p>我们已经展示了如何使用 stochastic functions 和 primitive distributions 来表示 Pyro中的模型。为了从数据中学习模型并对其进行推理，我们需要 be able to do inference. This is the subject of the <a class="reference internal" href="intro_part_ii.html"><span class="doc">next tutorial</span></a>.</p>
+<p>我们已经展示了如何使用随机函数和初等随机函数(primitive distributions)来表示 Pyro中的模型。为了从数据中学习模型并对其进行推理，我们需要 be able to do inference. This is the subject of the <a class="reference internal" href="intro_part_ii.html"><span class="doc">next tutorial</span></a>.</p>
 </div>
 </div>
 
