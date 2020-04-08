@@ -96,7 +96,7 @@
 <li class="toctree-l1"><a class="reference internal" href="svi_part_i.html">SVI Part I: 随机变分推断基础</a></li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_ii.html">SVI Part II: 条件独立, 子采样和 Amortization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_iii.html">SVI Part III: ELBO 梯度估计</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中模型和数据维度</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中随机函数的维度</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Advanced:</span></p>
 <ul>
@@ -288,11 +288,10 @@
 <li class="toctree-l2"><a class="reference internal" href="svi_part_iii.html#参考文献">参考文献</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中模型和数据维度</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中随机函数的维度</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="tensor_shapes.html#随机函数的维度">随机函数的维度</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tensor_shapes.html#独立性声明">独立性声明</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tensor_shapes.html#Subsampling-tensors-inside-a-plate">Subsampling tensors inside a <code class="docutils literal notranslate"><span class="pre">plate</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="tensor_shapes.html#Broadcasting-to-allow-parallel-enumeration">Broadcasting to allow parallel enumeration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tensor_shapes.html#plate内部张量子采样"><code class="docutils literal notranslate"><span class="pre">plate</span></code>内部张量子采样</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tensor_shapes.html#广播和并行计算">广播和并行计算</a></li>
 </ul>
 </li>
 </ul>
@@ -352,7 +351,7 @@
 <li class="toctree-l1"><a class="reference internal" href="bayesian_regression.html">贝叶斯回归-介绍(Part 1)</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="bayesian_regression.html#Setup">Setup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bayesian_regression.html#Linear-Regression">Linear Regression</a></li>
-<li class="toctree-l2"><a class="reference internal" href="bayesian_regression.html#Bayesian-Regression-with-Pyro’s-Stochastic-Variational-Inference-(SVI)">Bayesian Regression with Pyro’s Stochastic Variational Inference (SVI)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bayesian_regression.html#使用-SVI-做贝叶斯回归">使用 SVI 做贝叶斯回归</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bayesian_regression.html#Model-Evaluation">Model Evaluation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bayesian_regression.html#Model-Serving-via-TorchScript">Model Serving via TorchScript</a></li>
 </ul>
