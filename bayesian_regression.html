@@ -111,11 +111,8 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="vae.html">变分自编码器</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">贝叶斯回归-介绍(Part 1)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#Setup">Setup</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#Dataset">Dataset</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#Linear-Regression">Linear Regression</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Setup">Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#线性回归">线性回归</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#Training-with-PyTorch-Optimizers">Training with PyTorch Optimizers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#Plotting-the-Regression-Fit">Plotting the Regression Fit</a></li>
 </ul>
@@ -489,8 +486,8 @@ div.rendered_html tbody tr:hover {
 \[y = w X + b + \epsilon\]</div>
 <p>where <span class="math notranslate nohighlight">\(w\)</span> and <span class="math notranslate nohighlight">\(b\)</span> are learnable parameters and <span class="math notranslate nohighlight">\(\epsilon\)</span> represents observation noise. Specifically <span class="math notranslate nohighlight">\(w\)</span> is a matrix of weights and <span class="math notranslate nohighlight">\(b\)</span> is a bias vector.</p>
 <p>在本教程中，我们将首先在 PyTorch 中实现线性回归，并学习参数 <span class="math notranslate nohighlight">\(w\)</span> 和 <span class="math notranslate nohighlight">\(b\)</span> 的点估计。Then we will see how to incorporate uncertainty into our estimates by using Pyro to implement Bayesian regression. 此外，我们将学习 how to use the Pyro’s utility functions to do predictions and serve our model using <code class="docutils literal notranslate"><span class="pre">TorchScript</span></code>.</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -525,15 +522,8 @@ div.rendered_html tbody tr:hover {
     <span class="k">return</span> <span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span>
 
 <span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span> <span class="o">=</span> <span class="n">get_data</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">num_iterations</span> <span class="o">=</span><span class="mi">1000</span>
+
+<span class="n">num_iterations</span> <span class="o">=</span><span class="mi">1000</span>
 
 <span class="k">class</span> <span class="nc">BayesianRegression</span><span class="p">(</span><span class="n">PyroModule</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_features</span><span class="p">,</span> <span class="n">out_features</span><span class="p">):</span>
@@ -572,19 +562,19 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-[iteration 0001] loss: 3.3383
-[iteration 0201] loss: 1.6629
-[iteration 0401] loss: 1.4647
-[iteration 0601] loss: 1.4806
-[iteration 0801] loss: 1.4765
+[iteration 0001] loss: 4.6074
+[iteration 0201] loss: 2.5499
+[iteration 0401] loss: 1.4601
+[iteration 0601] loss: 1.4725
+[iteration 0801] loss: 1.4677
 AutoDiagonalNormal.loc Parameter containing:
-tensor([-2.2037, -1.7586, -0.1228,  0.4364,  9.2172])
-AutoDiagonalNormal.scale tensor([0.0635, 0.1462, 0.0448, 0.0759, 0.0763])
+tensor([-2.2916, -1.8635, -0.1926,  0.3305,  9.1682])
+AutoDiagonalNormal.scale tensor([0.0559, 0.1428, 0.0459, 0.0847, 0.0635])
 </pre></div></div>
 </div>
 <div class="section" id="Setup">
 <h2>Setup<a class="headerlink" href="#Setup" title="Permalink to this headline">¶</a></h2>
-<p>Let’s begin by importing the modules we’ll need.</p>
+<p>首先，导入所需的模块。</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
@@ -624,10 +614,13 @@ AutoDiagonalNormal.scale tensor([0.0635, 0.1462, 0.0448, 0.0759, 0.0763])
 </pre></div>
 </div>
 </div>
-<div class="section" id="Dataset">
-<h3>Dataset<a class="headerlink" href="#Dataset" title="Permalink to this headline">¶</a></h3>
-<p>The following example is adapted from [1]. We would like to explore the relationship between topographic heterogeneity of a nation as measured by the Terrain Ruggedness Index (variable <em>rugged</em> in the dataset) and its GDP per capita. In particular, it was noted by the authors in [2] that terrain ruggedness or bad geography is related to poorer economic performance outside of Africa, but rugged terrains have had a reverse effect on income for African nations. Let us look at the data and
-investigate this relationship. We will be focusing on three features from the dataset: - <code class="docutils literal notranslate"><span class="pre">rugged</span></code>: quantifies the Terrain Ruggedness Index - <code class="docutils literal notranslate"><span class="pre">cont_africa</span></code>: whether the given nation is in Africa - <code class="docutils literal notranslate"><span class="pre">rgdppc_2000</span></code>: Real GDP per capita for the year 2000</p>
+<p><strong>Dataset</strong></p>
+<p>以下示例来自于文献 [1]. 我们希望探索 relationship between topographic heterogeneity of a nation as measured by the Terrain Ruggedness Index (数据中的 <em>rugged</em> 变量) and 人均GDP. 具体来说, it was noted by the authors in [2] that terrain ruggedness or bad geography is related to poorer economic performance outside of Africa, but rugged terrains have had a reverse effect on income for African nations. 让我们查看数据并研究这种关系，我们将关注数据集中的三个特征：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">rugged</span></code>: quantifies the Terrain Ruggedness Index</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cont_africa</span></code>: whether the given nation is in Africa</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rgdppc_2000</span></code>: Real GDP per capita for the year 2000</p></li>
+</ul>
 <p>The response variable GDP is highly skewed, so we will log-transform it.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
@@ -669,19 +662,18 @@ investigate this relationship. We will be focusing on three features from the da
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/bayesian_regression_9_0.png" src="_images/bayesian_regression_9_0.png" />
+<img alt="_images/bayesian_regression_8_0.png" src="_images/bayesian_regression_8_0.png" />
 </div>
 </div>
 </div>
-</div>
-<div class="section" id="Linear-Regression">
-<h2>Linear Regression<a class="headerlink" href="#Linear-Regression" title="Permalink to this headline">¶</a></h2>
-<p>We would like to predict log GDP per capita of a nation as a function of two features from the dataset - whether the nation is in Africa, and its Terrain Ruggedness Index. We will create a trivial class called <code class="docutils literal notranslate"><span class="pre">PyroModule[nn.Linear]</span></code> that subclasses <a class="reference external" href="http://docs.pyro.ai/en/dev/nn.html#module-pyro.nn.module">PyroModule</a> and <code class="docutils literal notranslate"><span class="pre">torch.nn.Linear</span></code>. <code class="docutils literal notranslate"><span class="pre">PyroModule</span></code> is very similar to PyTorch’s <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>, but additionally supports <a class="reference external" href="http://docs.pyro.ai/en/dev/primitives.html#primitives">Pyro
-primitives</a> as attributes that can be modified by Pyro’s <a class="reference external" href="http://pyro.ai/examples/effect_handlers.html">effect handlers</a> (see the <a class="reference external" href="#Model">next section</a> on how we can have module attributes that are <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> primitives). Some general notes:</p>
+<div class="section" id="线性回归">
+<h2>线性回归<a class="headerlink" href="#线性回归" title="Permalink to this headline">¶</a></h2>
+<p>我们想根据数据集中的两个特征预测一个国家的人均GDP的对数， 这两个特征包括 whether the nation is in Africa, and its Terrain Ruggedness Index.</p>
+<p>We will create a trivial class called <code class="docutils literal notranslate"><span class="pre">PyroModule[nn.Linear]</span></code> that subclasses <a class="reference external" href="http://docs.pyro.ai/en/dev/nn.html#module-pyro.nn.module">PyroModule</a> and <code class="docutils literal notranslate"><span class="pre">torch.nn.Linear</span></code>. <code class="docutils literal notranslate"><span class="pre">PyroModule</span></code> 非常类似于 PyTorch’s <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>, but additionally supports <a class="reference external" href="http://docs.pyro.ai/en/dev/primitives.html#primitives">Pyro primitives</a> as attributes that can be modified by Pyro’s <a class="reference external" href="http://pyro.ai/examples/effect_handlers.html">effect handlers</a> (see the <a class="reference external" href="#Model">next section</a> on how we can have
+module attributes that are <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> primitives). Some general notes:</p>
 <ul class="simple">
-<li><p>Learnable parameters in PyTorch modules are instances of <code class="docutils literal notranslate"><span class="pre">nn.Parameter</span></code>, in this case the <code class="docutils literal notranslate"><span class="pre">weight</span></code> and <code class="docutils literal notranslate"><span class="pre">bias</span></code> parameters of the <code class="docutils literal notranslate"><span class="pre">nn.Linear</span></code> class. When declared inside a <code class="docutils literal notranslate"><span class="pre">PyroModule</span></code> as attributes, these are automatically registered in Pyro’s param store. While this model does not require us to constrain the value of these parameters during optimization, this can also be easily achieved in <code class="docutils literal notranslate"><span class="pre">PyroModule</span></code> using the
-<a class="reference external" href="http://docs.pyro.ai/en/dev/nn.html#pyro.nn.module.PyroParam">PyroParam</a> statement.</p></li>
-<li><p>Note that while the <code class="docutils literal notranslate"><span class="pre">forward</span></code> method of <code class="docutils literal notranslate"><span class="pre">PyroModule[nn.Linear]</span></code> inherits from <code class="docutils literal notranslate"><span class="pre">nn.Linear</span></code>, it can also be easily overridden. e.g. in the case of logistic regression, we apply a sigmoid transformation to the linear predictor.</p></li>
+<li><p>PyTorch模块中可学习的参数是 <code class="docutils literal notranslate"><span class="pre">nn.Parameter</span></code> 的实例, in this case the <code class="docutils literal notranslate"><span class="pre">weight</span></code> and <code class="docutils literal notranslate"><span class="pre">bias</span></code> parameters of the <code class="docutils literal notranslate"><span class="pre">nn.Linear</span></code> class. When declared inside a <code class="docutils literal notranslate"><span class="pre">PyroModule</span></code> as attributes, these are automatically registered in Pyro’s param store. While this model does not require us to constrain the value of these parameters during optimization, this can also be easily achieved in <code class="docutils literal notranslate"><span class="pre">PyroModule</span></code> using the <a class="reference external" href="http://docs.pyro.ai/en/dev/nn.html#pyro.nn.module.PyroParam">PyroParam</a> statement.</p></li>
+<li><p>请注意，虽然 <code class="docutils literal notranslate"><span class="pre">PyroModule[nn.Linear]</span></code> 的 <code class="docutils literal notranslate"><span class="pre">forward</span></code> 方法继承自 <code class="docutils literal notranslate"><span class="pre">nn.Linear</span></code>, 也可以轻松重写. e.g. in the case of logistic regression, we apply a sigmoid transformation to the linear predictor.</p></li>
 </ul>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
@@ -699,9 +691,9 @@ primitives</a> as attributes that can be modified by Pyro’s <a class="referenc
 <div class="section" id="Training-with-PyTorch-Optimizers">
 <h3>Training with PyTorch Optimizers<a class="headerlink" href="#Training-with-PyTorch-Optimizers" title="Permalink to this headline">¶</a></h3>
 <p>Note that in addition to the two features <code class="docutils literal notranslate"><span class="pre">rugged</span></code> and <code class="docutils literal notranslate"><span class="pre">cont_africa</span></code>, we also include an interaction term in our model, which lets us separately model the effect of ruggedness on the GDP for nations within and outside Africa.</p>
-<p>We use the mean squared error (MSE) as our loss and Adam as our optimizer from the <code class="docutils literal notranslate"><span class="pre">torch.optim</span></code> module. We would like to optimize the parameters of our model, namely the <code class="docutils literal notranslate"><span class="pre">weight</span></code> and <code class="docutils literal notranslate"><span class="pre">bias</span></code> parameters of the network, which corresponds to our regression coefficents and the intercept.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<p>我们使用均方误差（MSE）作为损失 and Adam as our optimizer from the <code class="docutils literal notranslate"><span class="pre">torch.optim</span></code> module. We would like to optimize the parameters of our model, namely the <code class="docutils literal notranslate"><span class="pre">weight</span></code> and <code class="docutils literal notranslate"><span class="pre">bias</span></code> parameters of the network, which corresponds to our regression coefficents and the intercept.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -745,52 +737,12 @@ primitives</a> as attributes that can be modified by Pyro’s <a class="referenc
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-[iteration 0050] loss: 3179.7852
-[iteration 0100] loss: 1616.1371
-[iteration 0150] loss: 1109.4117
-[iteration 0200] loss: 833.7545
-[iteration 0250] loss: 637.5822
-[iteration 0300] loss: 488.2652
-[iteration 0350] loss: 376.4650
-[iteration 0400] loss: 296.0483
-[iteration 0450] loss: 240.6140
-[iteration 0500] loss: 203.9386
-[iteration 0550] loss: 180.6171
-[iteration 0600] loss: 166.3493
-[iteration 0650] loss: 157.9457
-[iteration 0700] loss: 153.1786
-[iteration 0750] loss: 150.5735
-[iteration 0800] loss: 149.2020
-[iteration 0850] loss: 148.5065
-[iteration 0900] loss: 148.1668
-[iteration 0950] loss: 148.0070
-[iteration 1000] loss: 147.9347
-[iteration 1050] loss: 147.9032
-[iteration 1100] loss: 147.8900
-[iteration 1150] loss: 147.8847
-[iteration 1200] loss: 147.8827
-[iteration 1250] loss: 147.8819
-[iteration 1300] loss: 147.8817
-[iteration 1350] loss: 147.8816
-[iteration 1400] loss: 147.8815
-[iteration 1450] loss: 147.8815
-[iteration 1500] loss: 147.8815
-Learned parameters:
-weight [[-1.9478593  -0.20278624  0.39330274]]
-bias [9.22308]
-</pre></div></div>
-</div>
 </div>
 <div class="section" id="Plotting-the-Regression-Fit">
 <h3>Plotting the Regression Fit<a class="headerlink" href="#Plotting-the-Regression-Fit" title="Permalink to this headline">¶</a></h3>
 <p>Let us plot the regression fit for our model, separately for countries outside and within Africa.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -814,13 +766,6 @@ bias [9.22308]
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="_images/bayesian_regression_15_0.png" src="_images/bayesian_regression_15_0.png" />
-</div>
-</div>
 <p>We notice that the relationship between terrain ruggedness has an inverse relationship with GDP for non-African nations, but it positively affects the GDP for African nations. It is however unclear how robust this trend is. In particular, we would like to understand how the regression fit would vary due to parameter uncertainty. To address this, we will build a simple bayesian model for linear regression. <a class="reference external" href="http://mlg.eng.cam.ac.uk/zoubin/papers/NatureReprint15.pdf">Bayesian modeling</a> offers a
 systematic framework for reasoning about model uncertainty. Instead of just learning point estimates, we’re going to learn a <em>distribution</em> over parameters that are consistent with the observed data.</p>
 </div>
@@ -838,7 +783,7 @@ systematic framework for reasoning about model uncertainty. Instead of just lear
 <code class="docutils literal notranslate"><span class="pre">mean</span></code>.</p></li>
 </ul>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -870,7 +815,7 @@ systematic framework for reasoning about model uncertainty. Instead of just lear
 e.g. in our case, this distribution should have a size of <code class="docutils literal notranslate"><span class="pre">(5,)</span></code> correspoding to the 3 regression coefficients for each of the terms, and 1 component contributed each by the intercept term and <code class="docutils literal notranslate"><span class="pre">sigma</span></code> in the model.</p>
 <p>Autoguide also supports learning MAP estimates with <code class="docutils literal notranslate"><span class="pre">AutoDelta</span></code> or composing guides with <code class="docutils literal notranslate"><span class="pre">AutoGuideList</span></code> (see the <a class="reference external" href="http://docs.pyro.ai/en/dev/infer.autoguide.html">docs</a> for more information).</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -886,7 +831,7 @@ e.g. in our case, this distribution should have a size of <code class="docutils
 <h3>Optimizing the Evidence Lower Bound<a class="headerlink" href="#Optimizing-the-Evidence-Lower-Bound" title="Permalink to this headline">¶</a></h3>
 <p>We will use stochastic variational inference (SVI) (for an introduction to SVI, see <a class="reference internal" href="svi_part_i.html"><span class="doc">SVI Part I</span></a>) for doing inference. Just like in the non-Bayesian linear regression model, each iteration of our training loop will take a gradient step, with the difference that in this case, we’ll use the Evidence Lower Bound (ELBO) objective instead of the MSE loss by constructing a <code class="docutils literal notranslate"><span class="pre">Trace_ELBO</span></code> object that we pass to <code class="docutils literal notranslate"><span class="pre">SVI</span></code>.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -900,8 +845,8 @@ e.g. in our case, this distribution should have a size of <code class="docutils
 </div>
 <p>Note that we use the <code class="docutils literal notranslate"><span class="pre">Adam</span></code> optimizer from Pyro’s <code class="docutils literal notranslate"><span class="pre">optim</span></code> module and not the <code class="docutils literal notranslate"><span class="pre">torch.optim</span></code> module as earlier. Here <code class="docutils literal notranslate"><span class="pre">Adam</span></code> is a thin wrapper around <code class="docutils literal notranslate"><span class="pre">torch.optim.Adam</span></code> (see <a class="reference internal" href="svi_part_i.html#optimizers"><span class="std std-ref">here</span></a> for a discussion). Optimizers in <code class="docutils literal notranslate"><span class="pre">pyro.optim</span></code> are used to optimize and update parameter values in Pyro’s parameter store. In particular, you will notice that we do not need to pass in learnable parameters to the optimizer since that is determined by the guide code and happens
 behind the scenes within the <code class="docutils literal notranslate"><span class="pre">SVI</span></code> class automatically. To take an ELBO gradient step we simply call the step method of SVI. The data argument we pass to <code class="docutils literal notranslate"><span class="pre">SVI.step</span></code> will be passed to both <code class="docutils literal notranslate"><span class="pre">model()</span></code> and <code class="docutils literal notranslate"><span class="pre">guide()</span></code>. The complete training loop is as follows:</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -914,31 +859,9 @@ behind the scenes within the <code class="docutils literal notranslate"><span cl
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-[iteration 0001] loss: 6.2310
-[iteration 0101] loss: 3.5253
-[iteration 0201] loss: 3.2347
-[iteration 0301] loss: 3.0890
-[iteration 0401] loss: 2.6377
-[iteration 0501] loss: 2.0626
-[iteration 0601] loss: 1.4852
-[iteration 0701] loss: 1.4631
-[iteration 0801] loss: 1.4632
-[iteration 0901] loss: 1.4592
-[iteration 1001] loss: 1.4940
-[iteration 1101] loss: 1.4988
-[iteration 1201] loss: 1.4938
-[iteration 1301] loss: 1.4679
-[iteration 1401] loss: 1.4581
-</pre></div></div>
-</div>
 <p>We can examine the optimized parameter values by fetching from Pyro’s param store.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -949,39 +872,16 @@ behind the scenes within the <code class="docutils literal notranslate"><span cl
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-AutoDiagonalNormal.loc Parameter containing:
-tensor([-2.2371, -1.8097, -0.1691,  0.3791,  9.1823])
-AutoDiagonalNormal.scale tensor([0.0551, 0.1142, 0.0387, 0.0769, 0.0702])
-</pre></div></div>
-</div>
 <p>As you can see, instead of just point estimates, we now have uncertainty estimates (<code class="docutils literal notranslate"><span class="pre">AutoDiagonalNormal.scale</span></code>) for our learned parameters. Note that Autoguide packs the latent variables into a single tensor, in this case, one entry per variable sampled in our model. Both the <code class="docutils literal notranslate"><span class="pre">loc</span></code> and <code class="docutils literal notranslate"><span class="pre">scale</span></code> parameters have size <code class="docutils literal notranslate"><span class="pre">(5,)</span></code>, one for each of the latent variables in the model, as we had remarked earlier.</p>
 <p>To look at the distribution of the latent parameters more clearly, we can make use of the <code class="docutils literal notranslate"><span class="pre">AutoDiagonalNormal.quantiles</span></code> method which will unpack the latent samples from the autoguide, and automatically constrain them to the site’s support (e.g. the variable <code class="docutils literal notranslate"><span class="pre">sigma</span></code> must lie in <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">10)</span></code>). We see that the median values for the parameters are quite close to the Maximum Likelihood point estimates we obtained from our first model.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">guide</span><span class="o">.</span><span class="n">quantiles</span><span class="p">([</span><span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">])</span>
 </pre></div>
 </div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-{&#39;sigma&#39;: [tensor(0.9328), tensor(0.9647), tensor(0.9976)],
- &#39;linear.weight&#39;: [tensor([[-1.8868, -0.1952,  0.3272]]),
-  tensor([[-1.8097, -0.1691,  0.3791]]),
-  tensor([[-1.7327, -0.1429,  0.4309]])],
- &#39;linear.bias&#39;: [tensor([9.1350]), tensor([9.1823]), tensor([9.2297])]}
-</pre></div></div>
 </div>
 </div>
 </div>
@@ -994,7 +894,7 @@ AutoDiagonalNormal.scale tensor([0.0551, 0.1142, 0.0387, 0.0769, 0.0702])
 <li><p>The remaining code is simply used to plot the 90% CI for the two variables from our model.</p></li>
 </ul>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1021,7 +921,7 @@ AutoDiagonalNormal.scale tensor([0.0551, 0.1142, 0.0387, 0.0769, 0.0702])
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1041,8 +941,8 @@ AutoDiagonalNormal.scale tensor([0.0551, 0.1142, 0.0387, 0.0769, 0.0702])
 </pre></div>
 </div>
 </div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1080,16 +980,9 @@ AutoDiagonalNormal.scale tensor([0.0551, 0.1142, 0.0387, 0.0769, 0.0702])
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="_images/bayesian_regression_33_0.png" src="_images/bayesian_regression_33_0.png" />
-</div>
-</div>
 <p>The above figure shows the uncertainty in our estimate of the regression line, and the 90% CI around the mean. We can also see that most of the data points actually lie outside the 90% CI, and this is expected because we have not plotted the outcome variable which will be affected by <code class="docutils literal notranslate"><span class="pre">sigma</span></code>! Let us do so next.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1124,18 +1017,11 @@ AutoDiagonalNormal.scale tensor([0.0551, 0.1142, 0.0387, 0.0769, 0.0702])
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="_images/bayesian_regression_35_0.png" src="_images/bayesian_regression_35_0.png" />
-</div>
-</div>
 <p>We observe that the outcome from our model and the 90% CI accounts for the majority of the data points that we observe in practice. It is usually a good idea to do such posterior predictive checks to see if our model gives valid predictions.</p>
 <p>Finally, let us revisit our earlier question of how robust the relationship between terrain ruggedness and GDP is against any uncertainty in the parameter estimates from our model. For this, we plot the distribution of the slope of the log GDP given terrain ruggedness for nations within and outside Africa. As can be seen below, the probability mass for African nations is largely concentrated in the positive region and vice-versa for other nations, lending further credence to the original
 hypothesis.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1150,13 +1036,6 @@ hypothesis.</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="_images/bayesian_regression_37_0.png" src="_images/bayesian_regression_37_0.png" />
-</div>
-</div>
 </div>
 <div class="section" id="Model-Serving-via-TorchScript">
 <h2>Model Serving via TorchScript<a class="headerlink" href="#Model-Serving-via-TorchScript" title="Permalink to this headline">¶</a></h2>
@@ -1168,7 +1047,7 @@ hypothesis.</p>
 <li><p>the <code class="docutils literal notranslate"><span class="pre">replay</span></code> poutine to condition the sites in the model to values sampled from the guide trace.</p></li>
 </ul>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1198,8 +1077,8 @@ hypothesis.</p>
 </div>
 </div>
 <p>We use <a class="reference external" href="https://pytorch.org/docs/stable/jit.html#torch.jit.trace_module">torch.jit.trace_module</a> to trace the <code class="docutils literal notranslate"><span class="pre">forward</span></code> method of this module and save it using <a class="reference external" href="https://pytorch.org/docs/stable/jit.html#torch.jit.save">torch.jit.save</a>. This saved model <code class="docutils literal notranslate"><span class="pre">reg_predict.pt</span></code> can be loaded with PyTorch’s C++ API using <code class="docutils literal notranslate"><span class="pre">torch::jit::load(filename)</span></code>, or using the Python API as we do below.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1209,42 +1088,9 @@ hypothesis.</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-(tensor([9.2165]),
- tensor([[-1.6612, -0.1498,  0.4282]]),
- tensor([ 7.5951,  8.2473,  9.3864,  9.2590,  9.0540,  9.3915,  8.6764,  9.3775,
-          9.5473,  9.6144, 10.3521,  8.5452,  5.4008,  8.4601,  9.6219,  9.7774,
-          7.1958,  7.2581,  8.9159,  9.0875,  8.3730,  8.7903,  9.3167,  8.8155,
-          7.4433,  9.9981,  8.6909,  9.2915, 10.1376,  7.7618, 10.1916,  7.4754,
-          6.3473,  7.7584,  9.1307,  6.0794,  8.5641,  7.8487,  9.2828,  9.0763,
-          7.9250, 10.9226,  8.0005, 10.1799,  5.3611,  8.1174,  8.0585,  8.5098,
-          6.8656,  8.6765,  7.8925,  9.5233, 10.1269, 10.2661,  7.8883,  8.9194,
-         10.2866,  7.0821,  8.2370,  8.3087,  7.8408,  8.4891,  8.0107,  7.6815,
-          8.7497,  9.3551,  9.9687, 10.4804,  8.5176,  7.1679, 10.8805,  7.4919,
-          8.7088,  9.2417,  9.2360,  9.7907,  8.4934,  7.8897,  9.5338,  9.6572,
-          9.6604,  9.9855,  6.7415,  8.1721, 10.0646, 10.0817,  8.4503,  9.2588,
-          8.4489,  7.7516,  6.8496,  9.2208,  8.9852, 10.6585,  9.4218,  9.1290,
-          9.5631,  9.7422, 10.2814,  7.2624,  9.6727,  8.9743,  6.9666,  9.5856,
-          9.2518,  8.4207,  8.6988,  9.1914,  7.8161,  9.8446,  6.5528,  8.5518,
-          6.7168,  7.0694,  8.9211,  8.5311,  8.4545, 10.8346,  7.8768,  9.2537,
-          9.0776,  9.4698,  7.9611,  9.2177,  8.0880,  8.5090,  9.2262,  8.9242,
-          9.3966,  7.5051,  9.1014,  8.9601,  7.7225,  8.7569,  8.5847,  8.8465,
-          9.7494,  8.8587,  6.5624,  6.9372,  9.9806, 10.1259,  9.1864,  7.5758,
-          9.8258,  8.6375,  7.6954,  8.9718,  7.0985,  8.6360,  8.5951,  8.9163,
-          8.4661,  8.4551, 10.6844,  7.5948,  8.7568,  9.5296,  8.9530,  7.1214,
-          9.1401,  8.4992,  8.9115, 10.9739,  8.1593, 10.1162,  9.7072,  7.8641,
-          8.8606,  7.5935]),
- tensor(0.9631))
-</pre></div></div>
-</div>
 <p>Let us check that our <code class="docutils literal notranslate"><span class="pre">Predict</span></code> module was indeed serialized correctly, by generating samples from the loaded module and regenerating the previous plot.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1264,13 +1110,6 @@ hypothesis.</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="_images/bayesian_regression_43_0.png" src="_images/bayesian_regression_43_0.png" />
-</div>
-</div>
 <p>In the next section, we’ll look at how to write guides for variational inference as well as compare the results with inference via HMC.</p>
 <div class="section" id="参考文献">
 <h3>参考文献<a class="headerlink" href="#参考文献" title="Permalink to this headline">¶</a></h3>
@@ -1278,15 +1117,6 @@ hypothesis.</p>
 <li><p>McElreath, D., <em>Statistical Rethinking, Chapter 7</em>, 2016</p></li>
 <li><p>Nunn, N. &amp; Puga, D., <a class="reference external" href="https://diegopuga.org/papers/rugged.pdf">Ruggedness: The blessing of bad geography in Africa”</a>, Review of Economics and Statistics 94(1), Feb. 2012</p></li>
 </ol>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>
-</pre></div>
-</div>
-</div>
 </div>
 </div>
 </div>

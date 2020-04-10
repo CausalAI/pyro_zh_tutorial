@@ -468,16 +468,18 @@ div.rendered_html tbody tr:hover {
 </style>
 <div class="section" id="贝叶斯优化">
 <h1>贝叶斯优化<a class="headerlink" href="#贝叶斯优化" title="Permalink to this headline">¶</a></h1>
+<p>贝叶斯优化是用于对付困难优化问题的，有的优化问题目标函数难以求导，比如自动机器学习中的超参数如何选择问题。</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Bayesian_optimization">Bayesian optimization</a> is a powerful strategy for minimizing (or maximizing) objective functions that are costly to evaluate. It is an important component of <a class="reference external" href="https://en.wikipedia.org/wiki/Automated_machine_learning">automated machine learning</a> toolboxes such as <a class="reference external" href="https://automl.github.io/auto-sklearn/stable/">auto-sklearn</a>, <a class="reference external" href="http://www.cs.ubc.ca/labs/beta/Projects/autoweka/">auto-weka</a>, and
 <a class="reference external" href="https://scikit-optimize.github.io/">scikit-optimize</a>, where Bayesian optimization is used to select model hyperparameters. Bayesian optimization is used for a wide range of other applications as well; as cataloged in the review [2], these include interactive user-interfaces, robotics, environmental monitoring, information extraction, combinatorial optimization, sensor networks, adaptive Monte Carlo, experimental design, and reinforcement learning.</p>
 <div class="section" id="Problem-Setup">
 <h2>Problem Setup<a class="headerlink" href="#Problem-Setup" title="Permalink to this headline">¶</a></h2>
-<p>We are given a minimization problem</p>
+<p>给定一个最优化问题：</p>
 <div class="math notranslate nohighlight">
 \[x^* = \text{arg}\min \ f(x),\]</div>
-<p>where <span class="math notranslate nohighlight">\(f\)</span> is a fixed objective function that we can evaluate pointwise. Here we assume that we do <em>not</em> have access to the gradient of <span class="math notranslate nohighlight">\(f\)</span>. We also allow for the possibility that evaluations of <span class="math notranslate nohighlight">\(f\)</span> are noisy.</p>
-<p>To solve the minimization problem, we will construct a sequence of points <span class="math notranslate nohighlight">\(\{x_n\}\)</span> that converge to <span class="math notranslate nohighlight">\(x^*\)</span>. Since we implicitly assume that we have a fixed budget (say 100 evaluations), we do not expect to find the exact minumum <span class="math notranslate nohighlight">\(x^*\)</span>: the goal is to get the best approximate solution we can given the allocated budget.</p>
-<p>The Bayesian optimization strategy works as follows:</p>
+<p>其中 <span class="math notranslate nohighlight">\(f\)</span> 是一个可以计算每个点处函数值的目标函数，但是我们无法计算梯度。We also allow for the possibility that evaluations of <span class="math notranslate nohighlight">\(f\)</span> are noisy.</p>
+<p>To solve the minimization problem, we will construct a sequence of points <span class="math notranslate nohighlight">\(\{x_n\}\)</span> that converge to <span class="math notranslate nohighlight">\(x^*\)</span>. Since we implicitly assume that we have a fixed budget (say 100 evaluations), we do not expect to find the exact minumum <span class="math notranslate nohighlight">\(x^*\)</span>: the goal is to get the best approximate solution we can given the allocated budget. 为了解决这样一个优化问题，就像梯度下降法一样，我们也要构造一个序列
+<span class="math notranslate nohighlight">\(\{x_n\} \rightarrow x^*\)</span>。不同的是我们既没有梯度信息帮助构造下一个点，也通常无法优化很多步骤，我们一般又一个固定的步骤（比如 100 步），目标就是在给优化定步骤下得到尽可能好的结果。</p>
+<p>贝叶斯优化策略的流程如下：</p>
 <ol class="arabic">
 <li><p>Place a prior on the objective function <span class="math notranslate nohighlight">\(f\)</span>. Each time we evaluate <span class="math notranslate nohighlight">\(f\)</span> at a new point <span class="math notranslate nohighlight">\(x_n\)</span>, we update our model for <span class="math notranslate nohighlight">\(f(x)\)</span>. This model serves as a surrogate objective function and reflects our beliefs about <span class="math notranslate nohighlight">\(f\)</span> (in particular it reflects our beliefs about where we expect <span class="math notranslate nohighlight">\(f(x)\)</span> to be close to <span class="math notranslate nohighlight">\(f(x^*)\)</span>). Since we are being Bayesian, our beliefs are encoded in a posterior that allows us to systematically reason about the uncertainty of our model
 predictions.</p></li>
@@ -524,7 +526,7 @@ will guide the query points <span class="math notranslate nohighlight">\(x_n\)</
 \[f(x) = (6x-2)^2 \sin(12x-4), \quad x\in [0, 1].\]</div>
 <p>This function has both a local minimum and a global minimum. The global minimum is at <span class="math notranslate nohighlight">\(x^* = 0.75725\)</span>.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -535,7 +537,7 @@ will guide the query points <span class="math notranslate nohighlight">\(x_n\)</
 </div>
 <p>Let’s begin by plotting <span class="math notranslate nohighlight">\(f\)</span>.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -550,7 +552,7 @@ will guide the query points <span class="math notranslate nohighlight">\(x_n\)</
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/bo_7_0.png" src="_images/bo_7_0.png" />
+<img alt="_images/bo_8_0.png" src="_images/bo_8_0.png" />
 </div>
 </div>
 </div>
@@ -562,9 +564,26 @@ will guide the query points <span class="math notranslate nohighlight">\(x_n\)</
 <div class="math notranslate nohighlight">
 \[y\sim f+\epsilon,\]</div>
 <p>where <span class="math notranslate nohighlight">\(\epsilon\)</span> is i.i.d. Gaussian noise and <span class="math notranslate nohighlight">\(k(X,X)\)</span> is a covariance matrix whose entries are given by <span class="math notranslate nohighlight">\(k(x,x^\prime)\)</span> for each pair of inputs <span class="math notranslate nohighlight">\((x,x^\prime)\)</span>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">graphviz</span> <span class="k">import</span> <span class="n">Source</span>
+<span class="n">Source</span><span class="p">(</span><span class="s1">&#39;digraph{rankdir=LR; X -&gt; f[label=&quot;k(X, X)&quot;]; f -&gt; y}&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<img alt="_images/bo_11_0.svg" src="_images/bo_11_0.svg" /></div>
+</div>
 <p>We choose the <a class="reference external" href="https://en.wikipedia.org/wiki/Mat%C3%A9rn_covariance_function">Matern</a> kernel with <span class="math notranslate nohighlight">\(\nu = \frac{5}{2}\)</span> (as suggested in reference [1]). Note that the popular <a class="reference external" href="https://en.wikipedia.org/wiki/Radial_basis_function_kernel">RBF</a> kernel, which is used in many regression tasks, results in a function prior whose samples are infinitely differentiable; this is probably an unrealistic assumption for most ‘black-box’ objective functions.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -578,7 +597,7 @@ will guide the query points <span class="math notranslate nohighlight">\(x_n\)</
 </div>
 <p>The following helper function <code class="docutils literal notranslate"><span class="pre">update_posterior</span></code> will take care of updating our <code class="docutils literal notranslate"><span class="pre">gpmodel</span></code> each time we evaluate <span class="math notranslate nohighlight">\(f\)</span> at a new value <span class="math notranslate nohighlight">\(x\)</span>.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -735,7 +754,7 @@ prefer candidates <span class="math notranslate nohighlight">\(x\)</span> in are
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/bo_24_0.png" src="_images/bo_24_0.png" />
+<img alt="_images/bo_27_0.png" src="_images/bo_27_0.png" />
 </div>
 </div>
 <p>Because we have assumed that our observations contain noise, it is improbable that we will find the exact minimizer of the function <span class="math notranslate nohighlight">\(f\)</span>. Still, with a relatively small budget of evaluations (8) we see that the algorithm has converged to very close to the global minimum at <span class="math notranslate nohighlight">\(x^* = 0.75725\)</span>.</p>

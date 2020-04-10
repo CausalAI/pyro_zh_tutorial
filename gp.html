@@ -121,9 +121,9 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="gmm.html">高斯混合模型</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">高斯过程</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#Imports">Imports</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Data">Data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Define-model">Define model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#数学理解">数学理解</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Imports-and-Data">Imports and Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#模型定义">模型定义</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Inference">Inference</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#Fit-the-model-using-MAP">Fit the model using MAP</a></li>
 </ul>
@@ -471,24 +471,38 @@ div.rendered_html tbody tr:hover {
 </style>
 <div class="section" id="高斯过程">
 <h1>高斯过程<a class="headerlink" href="#高斯过程" title="Permalink to this headline">¶</a></h1>
-<p><a class="reference external" href="https://en.wikipedia.org/wiki/Gaussian_process">Gaussian Processes</a> have been used in supervised, unsupervised, and even reinforcement learning problems and are described by an elegant mathematical theory (for an overview of the subject see [1, 4]). They are also very attractive conceptually, since they offer an intuitive way to define priors over functions. And finally, since Gaussian Processes are formulated in a Bayesian setting, they come equipped with a powerful notion of uncertainty.</p>
-<p>Happily, Pyro offers some support for Gaussian Processes in the <code class="docutils literal notranslate"><span class="pre">pyro.contrib.gp</span></code> module. The goal of this tutorial is to give a brief introduction to Gaussian Processes (GPs) in the context of this module. We will mostly be focusing on how to use the GP interface in Pyro and refer the reader to the references for more details about GPs in general.</p>
-<p>The model we’re interested in is defined by</p>
+<p>高斯过程 (<a class="reference external" href="https://en.wikipedia.org/wiki/Gaussian_process">Gaussian Processes</a> ) 可以用于监督，无监督甚至是强化学习的问题中，并由一种优雅的数学理论来描述（有关概述请参见[1，4]）。它们在概念上也很有吸引力，因为它们提供了一种定义 priors over functions 的直观方法。最后，由于高斯过程是在贝叶斯环境下制定的，因此 they come equipped with a powerful notion of uncertainty.</p>
+<div class="section" id="数学理解">
+<h2>数学理解<a class="headerlink" href="#数学理解" title="Permalink to this headline">¶</a></h2>
+<p>高斯过程是基于统计学习理论和贝叶斯理论发展起来的一种机器学习方法，适于处理高维度、小样本和非线性等复杂回归问题，且泛化能力强，与神经网络、支持向量机相比，GP具有容易实现、超参数自适应获取、非参数推断灵活以及输出具有概率意义等优点。See more on <a class="reference external" href="https://www.zhihu.com/topic/20114581/top-answers">知乎</a></p>
+<p>我尽量避免直接写公式给新接触的人看，多数时候公式可能把创造的动机给掩盖掉，同时让问题是否能 tractable 变得不那么清晰。我想说清楚的是创造工具的动机和背后的问题。那么现在来看看<a class="reference external" href="https://www.zhihu.com/question/46631426">高斯过程方法的动机</a></p>
+<p>平稳高斯过程的一个例子是：</p>
+<div class="math notranslate nohighlight">
+\[X_t = \cos(at)Z_1 + \sin(at)Z_2\]</div>
+<p>其中 <span class="math notranslate nohighlight">\(Z_1, Z_2\)</span> 是独立的标准正态分布。那么有几个思考问题：</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\mathcal{GP}\left(0, \mathbf{K}_f(x, x')\right)\)</span> 如何与该例子对应？该高斯过程的核函数如何定义？</p></li>
+<li><p>该高斯过程用来近似某个随机函数，那么该随机函数的输入和输出是什么？输入是任意的 <span class="math notranslate nohighlight">\(x'\)</span>, 输出是给定 <span class="math notranslate nohighlight">\(x'\)</span> 相关核函数下的过程平稳分布？</p></li>
+<li><p>如何理解 “Ultimately Gaussian processes translate as taking priors on functions and the smoothness of these priors can be induced by the covariance function. If we expect that for”near-by” input points <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(x'\)</span> their corresponding output points <span class="math notranslate nohighlight">\(y\)</span> and <span class="math notranslate nohighlight">\(y'\)</span> to be “near-by” also, then the assumption of continuity is present.”</p></li>
+</ul>
+<p>要回答这些问题，建议搜索关键词 Gaussian process prediction, or Kriging</p>
+<p>令人高兴的是，Pyro在 <code class="docutils literal notranslate"><span class="pre">pyro.contrib.gp</span></code> 模块中为高斯过程提供了一些支持。本教程的目的是使用本模块简要介绍高斯过程（GPs）。我们将主要集中于如何在 Pyro 中使用 GP 接口，并向读者介绍有关GP的更多详细信息。</p>
+<p>模型定义如下:</p>
 <div class="math notranslate nohighlight">
 \[f \sim \mathcal{GP}\left(0, \mathbf{K}_f(x, x')\right)\]</div>
-<p>and</p>
 <div class="math notranslate nohighlight">
 \[y = f(x) + \epsilon,\quad \epsilon \sim \mathcal{N}\left(0, \beta^{-1}\mathbf{I}\right).\]</div>
-<p>Here <span class="math notranslate nohighlight">\(x, x' \in\mathbf{X}\)</span> are points in the input space and <span class="math notranslate nohighlight">\(y\in\mathbf{Y}\)</span> is a point in the output space. <span class="math notranslate nohighlight">\(f\)</span> is a draw from the GP prior specified by the kernel <span class="math notranslate nohighlight">\(\mathbf{K}_f\)</span> and represents a function from <span class="math notranslate nohighlight">\(\mathbf{X}\)</span> to <span class="math notranslate nohighlight">\(\mathbf{Y}\)</span>. Finally, <span class="math notranslate nohighlight">\(\epsilon\)</span> represents Gaussian observation noise.</p>
+<p>其中 <span class="math notranslate nohighlight">\(x, x' \in\mathbf{X}\)</span> 输入空间中的两个点 ，<span class="math notranslate nohighlight">\(y\in\mathbf{Y}\)</span> 是输出空间中的点. <span class="math notranslate nohighlight">\(f\)</span> is a draw from the GP prior specified by the kernel <span class="math notranslate nohighlight">\(\mathbf{K}_f\)</span> and represents a function from <span class="math notranslate nohighlight">\(\mathbf{X}\)</span> to <span class="math notranslate nohighlight">\(\mathbf{Y}\)</span>. Finally, <span class="math notranslate nohighlight">\(\epsilon\)</span> represents Gaussian observation noise.</p>
 <p>We will use the <a class="reference external" href="https://en.wikipedia.org/wiki/Radial_basis_function_kernel">radial basis function kernel</a> (RBF kernel) as the kernel of our GP:</p>
 <div class="math notranslate nohighlight">
 \[k(x,x') = \sigma^2 \exp\left(-\frac{\|x-x'\|^2}{2l^2}\right).\]</div>
 <p>Here <span class="math notranslate nohighlight">\(\sigma^2\)</span> and <span class="math notranslate nohighlight">\(l\)</span> are parameters that specify the kernel; specifically, <span class="math notranslate nohighlight">\(\sigma^2\)</span> is a variance or amplitude squared and <span class="math notranslate nohighlight">\(l\)</span> is a lengthscale. We’ll get some intuition for these parameters below.</p>
-<div class="section" id="Imports">
-<h2>Imports<a class="headerlink" href="#Imports" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="Imports-and-Data">
+<h2>Imports and Data<a class="headerlink" href="#Imports-and-Data" title="Permalink to this headline">¶</a></h2>
 <p>First, we import necessary modules.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -509,7 +523,7 @@ div.rendered_html tbody tr:hover {
 </div>
 <p>Throughout the tutorial we’ll want to visualize GPs. So we define a helper function for plotting:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -551,15 +565,13 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-</div>
-<div class="section" id="Data">
-<h2>Data<a class="headerlink" href="#Data" title="Permalink to this headline">¶</a></h2>
+<p><strong>Data</strong></p>
 <p>The data consist of <span class="math notranslate nohighlight">\(20\)</span> points sampled from</p>
 <div class="math notranslate nohighlight">
 \[y = 0.5\sin(3x) + \epsilon, \quad \epsilon \sim \mathcal{N}(0, 0.2).\]</div>
 <p>with <span class="math notranslate nohighlight">\(x\)</span> sampled uniformly from the interval <span class="math notranslate nohighlight">\([0, 5]\)</span>.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -575,15 +587,15 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/gp_9_0.png" src="_images/gp_9_0.png" />
+<img alt="_images/gp_12_0.png" src="_images/gp_12_0.png" />
 </div>
 </div>
 </div>
-<div class="section" id="Define-model">
-<h2>Define model<a class="headerlink" href="#Define-model" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="模型定义">
+<h2>模型定义<a class="headerlink" href="#模型定义" title="Permalink to this headline">¶</a></h2>
 <p>First we define a RBF kernel, specifying the values of the two hyperparameters <code class="docutils literal notranslate"><span class="pre">variance</span></code> and <code class="docutils literal notranslate"><span class="pre">lengthscale</span></code>. Then we construct a <code class="docutils literal notranslate"><span class="pre">GPRegression</span></code> object. Here we feed in another hyperparameter, <code class="docutils literal notranslate"><span class="pre">noise</span></code>, that corresponds to <span class="math notranslate nohighlight">\(\epsilon\)</span> above.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -594,8 +606,8 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <p>Let’s see what samples from this GP function prior look like. Note that this is <em>before</em> we’ve conditioned on the data. The shape these functions take—their smoothness, their vertical scale, etc.—is controlled by the GP kernel.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -603,16 +615,9 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="_images/gp_13_0.png" src="_images/gp_13_0.png" />
-</div>
-</div>
 <p>For example, if we make <code class="docutils literal notranslate"><span class="pre">variance</span></code> and <code class="docutils literal notranslate"><span class="pre">noise</span></code> smaller we will see function samples with smaller vertical amplitude:</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -623,20 +628,13 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="_images/gp_15_0.png" src="_images/gp_15_0.png" />
-</div>
-</div>
 </div>
 <div class="section" id="Inference">
 <h2>Inference<a class="headerlink" href="#Inference" title="Permalink to this headline">¶</a></h2>
 <p>In the above we set the kernel hyperparameters by hand. If we want to learn the hyperparameters from the data, we need to do inference. In the simplest (conjugate) case we do gradient ascent on the log marginal likelihood. In <code class="docutils literal notranslate"><span class="pre">pyro.contrib.gp</span></code>, we can use any <a class="reference external" href="https://pytorch.org/docs/stable/optim.html">PyTorch optimizer</a> to optimize parameters of a model. In addition, we need a loss function which takes inputs are the pair model and guide and returns an ELBO loss (see <a class="reference internal" href="svi_part_i.html"><span class="doc">SVI Part
 I</span></a> tutorial).</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -650,8 +648,28 @@ I</span></a> tutorial).</p>
     <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
     <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
     <span class="n">losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+
+<span class="c1"># Quiz: 都没有数据，如何训练的？数据定义在模型 gpr 之中</span>
+
 </pre></div>
 </div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">-------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span> Traceback (most recent call last)
+<span class="ansi-green-fg">&lt;ipython-input-1-97a8bd8ab535&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
+<span class="ansi-green-fg">----&gt; 1</span><span class="ansi-red-fg"> </span>optimizer <span class="ansi-blue-fg">=</span> torch<span class="ansi-blue-fg">.</span>optim<span class="ansi-blue-fg">.</span>Adam<span class="ansi-blue-fg">(</span>gpr<span class="ansi-blue-fg">.</span>parameters<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">,</span> lr<span class="ansi-blue-fg">=</span><span class="ansi-cyan-fg">0.005</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">      2</span> loss_fn <span class="ansi-blue-fg">=</span> pyro<span class="ansi-blue-fg">.</span>infer<span class="ansi-blue-fg">.</span>Trace_ELBO<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">.</span>differentiable_loss
+<span class="ansi-green-intense-fg ansi-bold">      3</span> losses <span class="ansi-blue-fg">=</span> <span class="ansi-blue-fg">[</span><span class="ansi-blue-fg">]</span>
+<span class="ansi-green-intense-fg ansi-bold">      4</span> num_steps <span class="ansi-blue-fg">=</span> <span class="ansi-cyan-fg">2500</span> <span class="ansi-green-fg">if</span> <span class="ansi-green-fg">not</span> smoke_test <span class="ansi-green-fg">else</span> <span class="ansi-cyan-fg">2</span>
+<span class="ansi-green-intense-fg ansi-bold">      5</span> <span class="ansi-green-fg">for</span> i <span class="ansi-green-fg">in</span> range<span class="ansi-blue-fg">(</span>num_steps<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
+
+<span class="ansi-red-fg">NameError</span>: name &#39;torch&#39; is not defined
+</pre></div></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
@@ -667,7 +685,7 @@ I</span></a> tutorial).</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/gp_18_0.png" src="_images/gp_18_0.png" />
+<img alt="_images/gp_21_0.png" src="_images/gp_21_0.png" />
 </div>
 </div>
 <p>Let’s see if we’re learned anything reasonable:</p>
@@ -684,7 +702,7 @@ I</span></a> tutorial).</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/gp_20_0.png" src="_images/gp_20_0.png" />
+<img alt="_images/gp_23_0.png" src="_images/gp_23_0.png" />
 </div>
 </div>
 <p>Here the thick red curve is the mean prediction and the blue band represents the 2-sigma uncertainty around the mean. It seems we learned reasonable kernel hyperparameters, as both the mean and uncertainty give a reasonable fit to the data. (Note that learning could have easily gone wrong if we e.g. chose too large of a learning rate or chose bad initital hyperparameters.)</p>
@@ -780,7 +798,7 @@ I</span></a> tutorial).</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/gp_28_0.png" src="_images/gp_28_0.png" />
+<img alt="_images/gp_31_0.png" src="_images/gp_31_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
@@ -796,7 +814,7 @@ I</span></a> tutorial).</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/gp_29_0.png" src="_images/gp_29_0.png" />
+<img alt="_images/gp_32_0.png" src="_images/gp_32_0.png" />
 </div>
 </div>
 <p>Let’s inspect the hyperparameters we’ve learned:</p>
@@ -846,7 +864,7 @@ noise = 0.04222287982702255
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/gp_34_0.png" src="_images/gp_34_0.png" />
+<img alt="_images/gp_37_0.png" src="_images/gp_37_0.png" />
 </div>
 </div>
 <p>Using the sparse GP is very similar to using the basic GP used above. We just need to add an extra parameter <span class="math notranslate nohighlight">\(X_u\)</span> (the inducing points).</p>
@@ -883,7 +901,7 @@ noise = 0.04222287982702255
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/gp_36_0.png" src="_images/gp_36_0.png" />
+<img alt="_images/gp_39_0.png" src="_images/gp_39_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
@@ -914,7 +932,7 @@ inducing points:
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/gp_37_1.png" src="_images/gp_37_1.png" />
+<img alt="_images/gp_40_1.png" src="_images/gp_40_1.png" />
 </div>
 </div>
 <p>We can see that the model learns a reasonable fit to the data. There are three different sparse approximations that are currently implemented in Pyro:</p>
@@ -956,7 +974,7 @@ that’s being done under the hood can support other likelihoods.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/gp_41_0.png" src="_images/gp_41_0.png" />
+<img alt="_images/gp_44_0.png" src="_images/gp_44_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
@@ -972,7 +990,7 @@ that’s being done under the hood can support other likelihoods.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/gp_42_0.png" src="_images/gp_42_0.png" />
+<img alt="_images/gp_45_0.png" src="_images/gp_45_0.png" />
 </div>
 </div>
 <p>That’s all there is to it. For more details on the <code class="docutils literal notranslate"><span class="pre">pyro.contrib.gp</span></code> module see the <a class="reference external" href="http://docs.pyro.ai/en/dev/contrib/gp.html">docs</a>. And for example code that uses a GP for classification see <a class="reference external" href="https://github.com/pyro-ppl/pyro/blob/dev/examples/contrib/gp/sv-dkl.py">here</a>.</p>

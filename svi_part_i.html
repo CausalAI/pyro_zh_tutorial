@@ -570,7 +570,7 @@ based on the data and our prior belief, the fairness of the coin is 0.531 +- 0.0
 \[ p_{\theta_{\rm{max}}}({\bf z} | {\bf x}) = \frac{p_{\theta_{\rm{max}}}({\bf x} , {\bf z})}{
 \int_{\bf z} \! \; p_{\theta_{\rm{max}}}({\bf x} , {\bf z})d{\bf z} }\]</div>
 <p>请注意，此表达式的分母 is the evidence(通常不可计算). 变分推断提供一种方案用于求解<span class="math notranslate nohighlight">\(\theta_{\rm{max}}\)</span> 和计算一个近似后验分布 <span class="math notranslate nohighlight">\(p_{\theta_{\rm{max}}}({\bf z} | {\bf x})\)</span>.</p>
-<p>总的来说，我们使用极大思然估计去求的 <span class="math notranslate nohighlight">\(\theta_{max}\)</span> 的思路会遇到很多麻烦。变分推断的目的是一方面估计出来联合分布的参数(也就是模型参数，得到生成模型)，另外一个方面是得到后验。</p>
+<p>总的来说，我们使用极大似然估计去求的 <span class="math notranslate nohighlight">\(\theta_{max}\)</span> 的思路会遇到很多麻烦。变分推断的目的是一方面估计出来联合分布的参数(也就是模型参数，得到生成模型)，另外一个方面是得到后验。</p>
 </div>
 <div class="section" id="近似后验的guide">
 <h2>近似后验的guide<a class="headerlink" href="#近似后验的guide" title="Permalink to this headline">¶</a></h2>
@@ -590,7 +590,7 @@ based on the data and our prior belief, the fairness of the coin is 0.531 +- 0.0
 <p>一旦指定了指导分布 <code class="docutils literal notranslate"><span class="pre">guide()</span></code> （我们在下面提供了一些明确的示例），我们就可以进行推断了。学习将就是一个优化问题 where each iteration of training takes a step in <span class="math notranslate nohighlight">\(\theta-\phi\)</span> space that moves the guide closer to the exact posterior. 为此，我们需要定义适当的目标函数。</p>
 <p><strong>注</strong>：</p>
 <ul class="simple">
-<li><p>因为 <code class="docutils literal notranslate"><span class="pre">model</span> <span class="pre">=</span> <span class="pre">primitive</span> <span class="pre">r.v.(观测变量</span> <span class="pre">+</span> <span class="pre">潜变量)</span> <span class="pre">+</span> <span class="pre">deterministic</span> <span class="pre">function</span></code> 是一个具备观测变量的分布, 而 <code class="docutils literal notranslate"><span class="pre">guide</span></code> 就近似的分布是此公式中潜变量给定观测变量的后验分布。</p></li>
+<li><p>因为 <code class="docutils literal notranslate"><span class="pre">model</span> <span class="pre">=</span> <span class="pre">primitive</span> <span class="pre">r.v.(观测变量</span> <span class="pre">+</span> <span class="pre">潜变量)</span> <span class="pre">+</span> <span class="pre">deterministic</span> <span class="pre">function</span></code> 是一个具备观测变量的分布, 而 <code class="docutils literal notranslate"><span class="pre">guide</span></code> 给定观测变量潜变量后验分布的近似分布。</p></li>
 <li><p>在变分自编码器中，用来近似后验分布的 <code class="docutils literal notranslate"><span class="pre">guide</span></code> <span class="math notranslate nohighlight">\(q_\phi(z)\)</span> 是局部的，意味着对一个每个样本 <span class="math notranslate nohighlight">\(x_i\)</span>, <code class="docutils literal notranslate"><span class="pre">latent</span> <span class="pre">r.v.</span></code> 的后验分布 <span class="math notranslate nohighlight">\(q_\phi(z|x_i)\)</span> 都不相同，我们需要学习与样本个数相同数量的后验分布。</p></li>
 </ul>
 </div>
