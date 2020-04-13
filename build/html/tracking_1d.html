@@ -97,11 +97,11 @@
 <li class="toctree-l1"><a class="reference internal" href="svi_part_i.html">SVI Part I: 随机变分推断基础</a></li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_ii.html">SVI Part II: 条件独立, 子采样和 Amortization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_iii.html">SVI Part III: ELBO 梯度估计</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中模型和数据维度</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中随机函数的维度</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Advanced:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="enumeration.html">Inference with 离散潜变量</a></li>
+<li class="toctree-l1"><a class="reference internal" href="enumeration.html">离散潜变量模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="custom_objectives.html">自定义 SVI 目标函数</a></li>
 <li class="toctree-l1"><a class="reference internal" href="jit.html">Pyro 模型中使用 PyTorch JIT Compiler</a></li>
 <li class="toctree-l1"><a class="reference internal" href="minipyro.html">Mini-Pyro</a></li>
@@ -464,7 +464,7 @@ div.rendered_html tbody tr:hover {
 <div class="section" id="跟踪未知数量的对象">
 <h1>跟踪未知数量的对象<a class="headerlink" href="#跟踪未知数量的对象" title="Permalink to this headline">¶</a></h1>
 <p>Tracking an Unknown Number of Objects</p>
-<p>While SVI can be used to learn components and assignments of a mixture model, pyro.contrib.tracking provides more efficient inference algorithms to estimate assignments. This notebook demonstrates how to use the <code class="docutils literal notranslate"><span class="pre">MarginalAssignmentPersistent</span></code> inside SVI.</p>
+<p>SVI 可以用于学习混合模型的 components 和 assignments, <code class="docutils literal notranslate"><span class="pre">pyro.contrib.tracking</span></code> 提供了一种更加高效的办法来估计 assignments. 本 notebook 演示了如何在SVI中使用 <code class="docutils literal notranslate"><span class="pre">MarginalAssignmentPersistent</span></code>。</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
@@ -491,7 +491,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<p>Let’s consider a model with deterministic dynamics, say sinusoids with known period but unknown phase and amplitude.</p>
+<p>让我们考虑一个具有确定性动力学的模型，比如说周期已知但相位和幅度未知的正弦曲线。</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
@@ -503,9 +503,9 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<p>It’s tricky to define a fully generative model, so instead we’ll separate our data generation process <code class="docutils literal notranslate"><span class="pre">generate_data()</span></code> from a factor graph <code class="docutils literal notranslate"><span class="pre">model()</span></code> that will be used in inference.</p>
+<p>直接把对应的生成模型定义出来很棘手, 所以我们把数据生成过程 <code class="docutils literal notranslate"><span class="pre">generate_data()</span></code> 和推断会用到的因子图 <code class="docutils literal notranslate"><span class="pre">model()</span></code> 分开定义。</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>

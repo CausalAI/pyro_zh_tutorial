@@ -96,11 +96,11 @@
 <li class="toctree-l1"><a class="reference internal" href="svi_part_i.html">SVI Part I: 随机变分推断基础</a></li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_ii.html">SVI Part II: 条件独立, 子采样和 Amortization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_iii.html">SVI Part III: ELBO 梯度估计</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中模型和数据维度</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中随机函数的维度</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Advanced:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="enumeration.html">Inference with 离散潜变量</a></li>
+<li class="toctree-l1"><a class="reference internal" href="enumeration.html">离散潜变量模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="custom_objectives.html">自定义 SVI 目标函数</a></li>
 <li class="toctree-l1"><a class="reference internal" href="jit.html">Pyro 模型中使用 PyTorch JIT Compiler</a></li>
 <li class="toctree-l1"><a class="reference internal" href="minipyro.html">Mini-Pyro</a></li>
@@ -242,7 +242,7 @@
 <h1>Welcome to Pyro Examples and Tutorials!<a class="headerlink" href="#welcome-to-pyro-examples-and-tutorials" title="Permalink to this headline">¶</a></h1>
 <p>— by Heyang Gong</p>
 <p>Pyro 是一个 Deep Universal Probabilistic Programming, 将会是我们 Causal AI 的一个重要编程框架。这是一个 Pyro 教程的中文编译项目，我们的翻译一方面仅仅翻译部分内容使之尽量接近原来的官方教程，另外一方面会加入一些个人的总结的理解。</p>
-<p>需要注意：在本教程中，我们混用了随机函数，函数，分布，随机变量这几个概念，他们都是 概率程序(probabilistic programs)的不同说法。</p>
+<p>需要注意：在本教程中，我们混用了随机函数，函数，分布，随机变量这几个概念，他们都是概率程序(probabilistic programs)的不同说法。</p>
 <p>Causal AI: <a class="reference external" href="https://sites.google.com/view/minituring/">https://sites.google.com/view/minituring/</a></p>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Introduction:</span></p>
@@ -281,18 +281,17 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_iii.html">SVI Part III: ELBO 梯度估计</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="svi_part_iii.html#Setup">Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="svi_part_iii.html#数学背景">数学背景</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_iii.html#简单情况:-可重参数化">简单情况: 可重参数化</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_iii.html#Tricky-case:-不可重参数化">Tricky case: 不可重参数化</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_iii.html#缓解方差问题策略">缓解方差问题策略</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_iii.html#参考文献">参考文献</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中模型和数据维度</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中随机函数的维度</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="tensor_shapes.html#随机函数的维度">随机函数的维度</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tensor_shapes.html#独立性声明">独立性声明</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tensor_shapes.html#Subsampling-tensors-inside-a-plate">Subsampling tensors inside a <code class="docutils literal notranslate"><span class="pre">plate</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="tensor_shapes.html#Broadcasting-to-allow-parallel-enumeration">Broadcasting to allow parallel enumeration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tensor_shapes.html#plate内部张量子采样"><code class="docutils literal notranslate"><span class="pre">plate</span></code>内部张量子采样</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tensor_shapes.html#广播和并行计算">广播和并行计算</a></li>
 </ul>
 </li>
 </ul>
@@ -300,20 +299,17 @@
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Advanced:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="enumeration.html">Inference with 离散潜变量</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="enumeration.html#Overview">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="enumeration.html">离散潜变量模型</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="enumeration.html#概览">概览</a></li>
 <li class="toctree-l2"><a class="reference internal" href="enumeration.html#Mechanics-of-enumeration">Mechanics of enumeration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="enumeration.html#Plates-and-enumeration">Plates and enumeration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="enumeration.html#Time-series-example">Time series example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="enumeration.html#时间序列示例">时间序列示例</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="custom_objectives.html">自定义 SVI 目标函数</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="custom_objectives.html#Basic-SVI-Usage">Basic SVI Usage</a></li>
-<li class="toctree-l2"><a class="reference internal" href="custom_objectives.html#Example:-Custom-Regularizer">Example: Custom Regularizer</a></li>
-<li class="toctree-l2"><a class="reference internal" href="custom_objectives.html#Example:-Clipping-Gradients">Example: Clipping Gradients</a></li>
-<li class="toctree-l2"><a class="reference internal" href="custom_objectives.html#Example:-Scaling-the-Loss">Example: Scaling the Loss</a></li>
-<li class="toctree-l2"><a class="reference internal" href="custom_objectives.html#Example:-Mixing-Optimizers">Example: Mixing Optimizers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="custom_objectives.html#Example:-Custom-ELBO">Example: Custom ELBO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="custom_objectives.html#SVI-的基本用法">SVI 的基本用法</a></li>
+<li class="toctree-l2"><a class="reference internal" href="custom_objectives.html#修改损失函数">修改损失函数</a></li>
+<li class="toctree-l2"><a class="reference internal" href="custom_objectives.html#自定义-ELBO-损失函数">自定义 ELBO 损失函数</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="jit.html">Pyro 模型中使用 PyTorch JIT Compiler</a><ul>
@@ -327,10 +323,12 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="effect_handlers.html">Poutine: Pyro 中使用 Effect Handlers 编程手册</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="effect_handlers.html#Poutine:-Pyro-算法库的基石">Poutine: Pyro 算法库的基石</a></li>
-<li class="toctree-l2"><a class="reference internal" href="effect_handlers.html#Implementing-new-effect-handlers-with-the-Messenger-API">Implementing new effect handlers with the <code class="docutils literal notranslate"><span class="pre">Messenger</span></code> API</a></li>
-<li class="toctree-l2"><a class="reference internal" href="effect_handlers.html#The-Messenger-API-in-more-detail">The <code class="docutils literal notranslate"><span class="pre">Messenger</span></code> API in more detail</a></li>
+<li class="toctree-l2"><a class="reference internal" href="effect_handlers.html#背景介绍">背景介绍</a></li>
+<li class="toctree-l2"><a class="reference internal" href="effect_handlers.html#Poutine:-Pyro’s-library-of-algorithmic-building-blocks">Poutine: Pyro’s library of algorithmic building blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="effect_handlers.html#用-Messenger-API-构建新-effect-handlers">用 <code class="docutils literal notranslate"><span class="pre">Messenger</span></code> API 构建新 effect handlers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="effect_handlers.html#Messenger-API-更多细节"><code class="docutils literal notranslate"><span class="pre">Messenger</span></code> API 更多细节</a></li>
 <li class="toctree-l2"><a class="reference internal" href="effect_handlers.html#Inside-the-messages-sent-by-Messengers">Inside the messages sent by <code class="docutils literal notranslate"><span class="pre">Messenger</span></code>s</a></li>
+<li class="toctree-l2"><a class="reference internal" href="effect_handlers.html#Mini-pyro-简介">Mini-pyro 简介</a></li>
 <li class="toctree-l2"><a class="reference internal" href="effect_handlers.html#Implementing-inference-algorithms-with-existing-effect-handlers:-examples">Implementing inference algorithms with existing effect handlers: examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="effect_handlers.html#Example:-implementing-lazy-evaluation-with-the-Messenger-API">Example: implementing lazy evaluation with the <code class="docutils literal notranslate"><span class="pre">Messenger</span></code> API</a></li>
 <li class="toctree-l2"><a class="reference internal" href="effect_handlers.html#References:-algebraic-effects-and-handlers-in-programming-language-research">References: algebraic effects and handlers in programming language research</a></li>
@@ -351,14 +349,13 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="bayesian_regression.html">贝叶斯回归-介绍(Part 1)</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="bayesian_regression.html#Setup">Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="bayesian_regression.html#Linear-Regression">Linear Regression</a></li>
-<li class="toctree-l2"><a class="reference internal" href="bayesian_regression.html#Bayesian-Regression-with-Pyro’s-Stochastic-Variational-Inference-(SVI)">Bayesian Regression with Pyro’s Stochastic Variational Inference (SVI)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bayesian_regression.html#线性回归">线性回归</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bayesian_regression.html#使用-SVI-做贝叶斯回归">使用 SVI 做贝叶斯回归</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bayesian_regression.html#Model-Evaluation">Model Evaluation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bayesian_regression.html#Model-Serving-via-TorchScript">Model Serving via TorchScript</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="bayesian_regression_ii.html">贝叶斯回归-推断算法(Part 2)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="bayesian_regression_ii.html#Bayesian-Linear-Regression">Bayesian Linear Regression</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bayesian_regression_ii.html#Model-+-Guide">Model + Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bayesian_regression_ii.html#SVI">SVI</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bayesian_regression_ii.html#HMC">HMC</a></li>
@@ -420,9 +417,9 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="gp.html">高斯过程</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="gp.html#Imports">Imports</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gp.html#Data">Data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gp.html#Define-model">Define model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gp.html#数学理解">数学理解</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gp.html#Imports-and-Data">Imports and Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gp.html#模型定义">模型定义</a></li>
 <li class="toctree-l2"><a class="reference internal" href="gp.html#Inference">Inference</a></li>
 <li class="toctree-l2"><a class="reference internal" href="gp.html#Sparse-GPs">Sparse GPs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="gp.html#More-Sparse-GPs">More Sparse GPs</a></li>
@@ -449,9 +446,8 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="easyguide.html">用 EasyGuide 构建 guides</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="easyguide.html#Modeling-time-series-data">Modeling time series data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="easyguide.html#Writing-a-guide-without-EasyGuide">Writing a guide without EasyGuide</a></li>
-<li class="toctree-l2"><a class="reference internal" href="easyguide.html#Using-EasyGuide">Using EasyGuide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="easyguide.html#时间序列建模">时间序列建模</a></li>
+<li class="toctree-l2"><a class="reference internal" href="easyguide.html#用-EasyGuide-快速构建-guide">用 EasyGuide 快速构建 guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="easyguide.html#Amortized-guides">Amortized guides</a></li>
 </ul>
 </li>

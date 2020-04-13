@@ -2,16 +2,20 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "#  用 EasyGuide 构建 guides\n",
     "\n",
-    "This tutorial describes the [pyro.contrib.easyguide](http://docs.pyro.ai/en/stable/contrib.easyguide.html) module. This tutorial assumes the reader is already familiar with [SVI](http://pyro.ai/examples/svi_part_ii.html) and [tensor shapes](http://pyro.ai/examples/tensor_shapes.html)."
+    "本教程讲解 [pyro.contrib.easyguide](http://docs.pyro.ai/en/stable/contrib.easyguide.html) module. 预备知识包括 [SVI](http://pyro.ai/examples/svi_part_ii.html) and [tensor shapes](http://pyro.ai/examples/tensor_shapes.html)."
    ]
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "**Summary:**\n",
     "\n",
@@ -28,7 +32,9 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "**Table of contents**\n",
     "\n",
@@ -40,8 +46,10 @@
   },
   {
    "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
+   "execution_count": 1,
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "import os\n",
@@ -60,22 +68,28 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
-    "## Modeling time series data"
+    "## 时间序列建模"
    ]
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
-    "Consider a time-series model with a slowly-varying continuous latent state and Bernoulli observations with a logistic link function."
+    "考虑一个具有缓慢变化的连续 latent state 的时间序列模型以及 Bernoulli observations with a logistic link function."
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
+   "execution_count": 4,
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "def model(batch, subsample, full_size):\n",
@@ -85,8 +99,7 @@
     "    with pyro.plate(\"data\", full_size, subsample=subsample):\n",
     "        z = 0.\n",
     "        for t in range(num_time_steps):\n",
-    "            z = pyro.sample(\"state_{}\".format(t),\n",
-    "                            dist.Normal(z, drift))\n",
+    "            z = pyro.sample(\"state_{}\".format(t), dist.Normal(z, drift))\n",
     "            batch[t] = pyro.sample(\"obs_{}\".format(t),\n",
     "                                   dist.Bernoulli(logits=z),\n",
     "                                   obs=batch[t])\n",
@@ -95,15 +108,19 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
-    "Let's generate some data directly from the model."
+    "让我们直接从模型中生成一些数据。"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
+   "execution_count": 3,
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "full_size = 100\n",
@@ -115,17 +132,31 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
-    "## Writing a guide without EasyGuide\n",
+    "## 用 EasyGuide 快速构建 guide"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "Collapsed": "false"
+   },
+   "source": [
+    "### 构建 guide\n",
+    "\n",
     "\n",
     "Consider a possible guide for this model where we point-estimate the `drift` parameter using a `Delta` distribution, and then model local time series using shared uncertainty but local means, using a `LowRankMultivariateNormal` distribution. There is a single global sample site which we can model with a `param` and `sample` statement. Then we sample a global pair of uncertainty parameters `cov_diag` and `cov_factor`. Next we sample a local `loc` parameter using `pyro.param(..., event_dim=...)` and an auxiliary sample site. Finally we unpack that auxiliary site into one element per time series. The auxiliary-unpacked-to-`Delta`s pattern is quite common."
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
+   "execution_count": 5,
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "rank = 3\n",
@@ -159,15 +190,19 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "Let's train using [SVI](http://docs.pyro.ai/en/stable/inference_algos.html#module-pyro.infer.svi) and [Trace_ELBO](http://docs.pyro.ai/en/stable/inference_algos.html#pyro.infer.trace_elbo.Trace_ELBO), manually batching data into small minibatches."
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
+   "execution_count": 6,
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "def train(guide, num_epochs=1 if smoke_test else 101, batch_size=20):\n",
@@ -190,20 +225,43 @@
   },
   {
    "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
+   "execution_count": 7,
+   "metadata": {
+    "Collapsed": "false"
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "epoch 0 loss = 2.6799370694841658\n",
+      "epoch 10 loss = 1.0252116586480822\n",
+      "epoch 20 loss = 0.9349947195393699\n",
+      "epoch 30 loss = 0.8692359572308405\n",
+      "epoch 40 loss = 0.8368030676501137\n",
+      "epoch 50 loss = 0.8429559614998954\n",
+      "epoch 60 loss = 0.7737532197747913\n",
+      "epoch 70 loss = 0.8165627040011542\n",
+      "epoch 80 loss = 0.7903614648069655\n",
+      "epoch 90 loss = 0.7785837551695961\n",
+      "epoch 100 loss = 0.7461400769267763\n"
+     ]
+    }
+   ],
    "source": [
     "train(guide)"
    ]
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
-    "## Using EasyGuide\n",
+    "### Using EasyGuide\n",
     "\n",
     "Now let's simplify using the `@easy_guide` decorator. Our modifications are:\n",
+    "\n",
     "1. Decorate with `@easy_guide` and add `self` to args.\n",
     "2. Replace the `Delta` guide for drift with a simple `map_estimate()`.\n",
     "3. Select a `group` of model sites and read their concatenated `event_shape`.\n",
@@ -212,8 +270,10 @@
   },
   {
    "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
+   "execution_count": 8,
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "@easy_guide(model)\n",
@@ -239,23 +299,47 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "Note we've used `group.event_shape` to determine the total flattened concatenated shape of all matched sites in the group."
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
+   "execution_count": 9,
+   "metadata": {
+    "Collapsed": "false"
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "epoch 0 loss = 1.6414739089523043\n",
+      "epoch 10 loss = 0.9550169031790324\n",
+      "epoch 20 loss = 0.8266084059476851\n",
+      "epoch 30 loss = 0.8526671367372785\n",
+      "epoch 40 loss = 0.7920228289876666\n",
+      "epoch 50 loss = 0.8243447229521614\n",
+      "epoch 60 loss = 0.8051274507556644\n",
+      "epoch 70 loss = 0.7844243283271789\n",
+      "epoch 80 loss = 0.7685391607114247\n",
+      "epoch 90 loss = 0.7792391348736627\n",
+      "epoch 100 loss = 0.7797092771530152\n"
+     ]
+    }
+   ],
    "source": [
     "train(guide)"
    ]
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "## Amortized guides\n",
     "\n",
@@ -264,8 +348,10 @@
   },
   {
    "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
+   "execution_count": 10,
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "@easy_guide(model)\n",
@@ -293,12 +379,39 @@
   },
   {
    "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
+   "execution_count": 11,
+   "metadata": {
+    "Collapsed": "false"
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "epoch 0 loss = 1.4899632521527155\n",
+      "epoch 10 loss = 0.7560149289710181\n",
+      "epoch 20 loss = 0.7410904037782123\n",
+      "epoch 30 loss = 0.7411658687080656\n",
+      "epoch 40 loss = 0.7323255259820394\n",
+      "epoch 50 loss = 0.7339726304667337\n",
+      "epoch 60 loss = 0.7356956726482937\n",
+      "epoch 70 loss = 0.7183537655728204\n",
+      "epoch 80 loss = 0.7098537818193436\n",
+      "epoch 90 loss = 0.7118427662849427\n",
+      "epoch 100 loss = 0.7383492155926568\n"
+     ]
+    }
+   ],
    "source": [
     "train(guide)"
    ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
   }
  ],
  "metadata": {
@@ -334,5 +447,5 @@
   }
  },
  "nbformat": 4,
- "nbformat_minor": 2
+ "nbformat_minor": 4
 }

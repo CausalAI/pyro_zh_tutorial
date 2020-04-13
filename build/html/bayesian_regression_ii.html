@@ -97,11 +97,11 @@
 <li class="toctree-l1"><a class="reference internal" href="svi_part_i.html">SVI Part I: 随机变分推断基础</a></li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_ii.html">SVI Part II: 条件独立, 子采样和 Amortization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_iii.html">SVI Part III: ELBO 梯度估计</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中模型和数据维度</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中随机函数的维度</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Advanced:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="enumeration.html">Inference with 离散潜变量</a></li>
+<li class="toctree-l1"><a class="reference internal" href="enumeration.html">离散潜变量模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="custom_objectives.html">自定义 SVI 目标函数</a></li>
 <li class="toctree-l1"><a class="reference internal" href="jit.html">Pyro 模型中使用 PyTorch JIT Compiler</a></li>
 <li class="toctree-l1"><a class="reference internal" href="minipyro.html">Mini-Pyro</a></li>
@@ -112,7 +112,6 @@
 <li class="toctree-l1"><a class="reference internal" href="vae.html">变分自编码器</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bayesian_regression.html">贝叶斯回归-介绍(Part 1)</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">贝叶斯回归-推断算法(Part 2)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#Bayesian-Linear-Regression">Bayesian Linear Regression</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Model-+-Guide">Model + Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#SVI">SVI</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#HMC">HMC</a></li>
@@ -468,68 +467,40 @@ div.rendered_html tbody tr:hover {
 </style>
 <div class="section" id="贝叶斯回归-推断算法(Part-2)">
 <h1>贝叶斯回归-推断算法(Part 2)<a class="headerlink" href="#贝叶斯回归-推断算法(Part-2)" title="Permalink to this headline">¶</a></h1>
-<p>在 <a class="reference internal" href="bayesian_regression.html"><span class="doc">Part I</span></a> 中，我们研究了如何使用SVI在简单的贝叶斯线性回归模型上进行推理。在本教程中，we’ll explore more expressive guides as well as exact inference techniques.我们将使用与以前相同的数据集。</p>
+<p>在 <a class="reference internal" href="bayesian_regression.html"><span class="doc">Part I</span></a> 中，我们研究了如何使用SVI在简单的贝叶斯线性回归模型上进行推理。在本教程中，we’ll explore more expressive guides as well as exact inference techniques. 我们将使用与以前相同的数据集。</p>
+<p><strong>贝叶斯线性回归</strong>：我们的目标是再次根据数据集的两个特征预测一个国家的人均 log GDP - whether the nation is in Africa, and its Terrain Ruggedness Index, but we will explore more expressive guides.</p>
+<p>+++++ 学完本文，您将看懂如下代码</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="o">%</span><span class="k">reset</span> -sf
-</pre></div>
-</div>
-</div>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">import</span> <span class="nn">os</span>
-
-<span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span></span><span class="kn">import</span> <span class="nn">logging</span><span class="o">,</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">torch</span><span class="o">,</span> <span class="nn">pyro</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
-<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">constraints</span>
-
-<span class="kn">import</span> <span class="nn">pyro</span>
-<span class="kn">import</span> <span class="nn">pyro.distributions</span> <span class="k">as</span> <span class="nn">dist</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">pyro.optim</span> <span class="k">as</span> <span class="nn">optim</span>
-
+<span class="kn">import</span> <span class="nn">pyro.distributions</span> <span class="k">as</span> <span class="nn">dist</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="k">import</span> <span class="n">nn</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">constraints</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">pyro.nn</span> <span class="k">import</span> <span class="n">PyroModule</span><span class="p">,</span> <span class="n">PyroSample</span><span class="p">,</span> <span class="n">Predictive</span>
+<span class="kn">from</span> <span class="nn">pyro.infer</span> <span class="k">import</span> <span class="n">SVI</span><span class="p">,</span> <span class="n">Trace_ELBO</span>
+<span class="kn">from</span> <span class="nn">pyro.infer.autoguide</span> <span class="k">import</span> <span class="n">AutoDiagonalNormal</span>
 <span class="n">pyro</span><span class="o">.</span><span class="n">set_rng_seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 <span class="k">assert</span> <span class="n">pyro</span><span class="o">.</span><span class="n">__version__</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;1.3.0&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="o">%</span><span class="k">matplotlib</span> inline
+<span class="o">%</span><span class="k">matplotlib</span> inline
 <span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;default&#39;</span><span class="p">)</span>
-
 <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(message)s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
-<span class="c1"># Enable validation checks</span>
 <span class="n">pyro</span><span class="o">.</span><span class="n">enable_validation</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">smoke_test</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;CI&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">)</span>
-<span class="n">pyro</span><span class="o">.</span><span class="n">set_rng_seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">DATA_URL</span> <span class="o">=</span> <span class="s2">&quot;https://d2hg8soec8ck9v.cloudfront.net/datasets/rugged_data.csv&quot;</span>
 <span class="n">rugged_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">DATA_URL</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;ISO-8859-1&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="section" id="Bayesian-Linear-Regression">
-<h2>Bayesian Linear Regression<a class="headerlink" href="#Bayesian-Linear-Regression" title="Permalink to this headline">¶</a></h2>
-<p>Our goal is once again to predict log GDP per capita of a nation as a function of two features from the dataset - whether the nation is in Africa, and its Terrain Ruggedness Index, but we will explore more expressive guides.</p>
-</div>
-<div class="section" id="Model-+-Guide">
-<h2>Model + Guide<a class="headerlink" href="#Model-+-Guide" title="Permalink to this headline">¶</a></h2>
-<p>We will write out the model again, similar to that in <a class="reference internal" href="bayesian_regression.html"><span class="doc">Part I</span></a>, but explicitly without the use of <code class="docutils literal notranslate"><span class="pre">PyroModule</span></code>. We will write out each term in the regression, using the same priors. <code class="docutils literal notranslate"><span class="pre">bA</span></code> and <code class="docutils literal notranslate"><span class="pre">bR</span></code> are regression coefficients corresponding to <code class="docutils literal notranslate"><span class="pre">is_cont_africa</span></code> and <code class="docutils literal notranslate"><span class="pre">ruggedness</span></code>, <code class="docutils literal notranslate"><span class="pre">a</span></code> is the intercept, and <code class="docutils literal notranslate"><span class="pre">bAR</span></code> is the correlating factor between the two features.</p>
-<p>Writing down a guide will proceed in close analogy to the construction of our model, with the key difference that the guide parameters need to be trainable. To do this we register the guide parameters in the ParamStore using <code class="docutils literal notranslate"><span class="pre">pyro.param()</span></code>. Note the positive constraints on scale parameters.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -538,20 +509,18 @@ div.rendered_html tbody tr:hover {
     <span class="n">b_a</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;bA&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">))</span>
     <span class="n">b_r</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;bR&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">))</span>
     <span class="n">b_ar</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;bAR&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">))</span>
-    <span class="n">sigma</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;sigma&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">10.</span><span class="p">))</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;sigma&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mf">8.0</span><span class="p">,</span> <span class="mf">10.</span><span class="p">))</span>
     <span class="n">mean</span> <span class="o">=</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b_a</span> <span class="o">*</span> <span class="n">is_cont_africa</span> <span class="o">+</span> <span class="n">b_r</span> <span class="o">*</span> <span class="n">ruggedness</span> <span class="o">+</span> <span class="n">b_ar</span> <span class="o">*</span> <span class="n">is_cont_africa</span> <span class="o">*</span> <span class="n">ruggedness</span>
     <span class="k">with</span> <span class="n">pyro</span><span class="o">.</span><span class="n">plate</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">ruggedness</span><span class="p">)):</span>
         <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;obs&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">log_gdp</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">guide</span><span class="p">(</span><span class="n">is_cont_africa</span><span class="p">,</span> <span class="n">ruggedness</span><span class="p">,</span> <span class="n">log_gdp</span><span class="p">):</span>
     <span class="n">a_loc</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s1">&#39;a_loc&#39;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">0.</span><span class="p">))</span>
-    <span class="n">a_scale</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s1">&#39;a_scale&#39;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">1.</span><span class="p">),</span>
-                         <span class="n">constraint</span><span class="o">=</span><span class="n">constraints</span><span class="o">.</span><span class="n">positive</span><span class="p">)</span>
-    <span class="n">sigma_loc</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s1">&#39;sigma_loc&#39;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">1.</span><span class="p">),</span>
-                             <span class="n">constraint</span><span class="o">=</span><span class="n">constraints</span><span class="o">.</span><span class="n">positive</span><span class="p">)</span>
+    <span class="n">a_scale</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s1">&#39;a_scale&#39;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">1.</span><span class="p">),</span> <span class="n">constraint</span><span class="o">=</span><span class="n">constraints</span><span class="o">.</span><span class="n">positive</span><span class="p">)</span>
+    <span class="n">sigma_loc</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s1">&#39;sigma_loc&#39;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">1.</span><span class="p">),</span> <span class="n">constraint</span><span class="o">=</span><span class="n">constraints</span><span class="o">.</span><span class="n">positive</span><span class="p">)</span>
     <span class="n">weights_loc</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s1">&#39;weights_loc&#39;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
-    <span class="n">weights_scale</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s1">&#39;weights_scale&#39;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
-                               <span class="n">constraint</span><span class="o">=</span><span class="n">constraints</span><span class="o">.</span><span class="n">positive</span><span class="p">)</span>
+    <span class="n">weights_scale</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s1">&#39;weights_scale&#39;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">constraint</span><span class="o">=</span><span class="n">constraints</span><span class="o">.</span><span class="n">positive</span><span class="p">)</span>
+
     <span class="n">a</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">a_loc</span><span class="p">,</span> <span class="n">a_scale</span><span class="p">))</span>
     <span class="n">b_a</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;bA&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">weights_loc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">weights_scale</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
     <span class="n">b_r</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;bR&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">weights_loc</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">weights_scale</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
@@ -561,6 +530,86 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">svi</span> <span class="o">=</span> <span class="n">SVI</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">guide</span><span class="p">,</span> <span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">({</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="o">.</span><span class="mi">05</span><span class="p">}),</span><span class="n">loss</span><span class="o">=</span><span class="n">Trace_ELBO</span><span class="p">())</span>
+<span class="n">is_cont_africa</span><span class="p">,</span> <span class="n">ruggedness</span><span class="p">,</span> <span class="n">log_gdp</span> <span class="o">=</span> <span class="n">train</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">train</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">train</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span>
+<span class="n">pyro</span><span class="o">.</span><span class="n">clear_param_store</span><span class="p">()</span>
+<span class="n">num_iters</span> <span class="o">=</span> <span class="mi">5000</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">smoke_test</span> <span class="k">else</span> <span class="mi">2</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_iters</span><span class="p">):</span>
+    <span class="n">elbo</span> <span class="o">=</span> <span class="n">svi</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">is_cont_africa</span><span class="p">,</span> <span class="n">ruggedness</span><span class="p">,</span> <span class="n">log_gdp</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">500</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Elbo loss: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">elbo</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+Elbo loss: 5795.467590510845
+Elbo loss: 415.8169444799423
+Elbo loss: 250.71916329860687
+Elbo loss: 247.19457268714905
+Elbo loss: 249.2004036307335
+Elbo loss: 250.96484470367432
+Elbo loss: 249.35092514753342
+Elbo loss: 248.7831552028656
+Elbo loss: 248.62140649557114
+Elbo loss: 250.4274433851242
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">num_samples</span> <span class="o">=</span> <span class="mi">1000</span>
+<span class="n">predictive</span> <span class="o">=</span> <span class="n">Predictive</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">guide</span><span class="o">=</span><span class="n">guide</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">)</span>
+<span class="n">svi_samples</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">num_samples</span><span class="p">)</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+               <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">predictive</span><span class="p">(</span><span class="n">log_gdp</span><span class="p">,</span> <span class="n">is_cont_africa</span><span class="p">,</span> <span class="n">ruggedness</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+               <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="s2">&quot;obs&quot;</span><span class="p">}</span>
+<span class="k">for</span> <span class="n">site</span><span class="p">,</span> <span class="n">values</span> <span class="ow">in</span> <span class="n">summary</span><span class="p">(</span><span class="n">svi_samples</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Site: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">site</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Site: a
+       mean       std        5%       25%       50%       75%       95%
+0  9.177502  0.062302  9.077003  9.134532  9.178522  9.215999  9.278267
+
+Site: bA
+       mean       std      5%       25%      50%       75%       95%
+0 -1.895068  0.118995 -2.0918 -1.974353 -1.89098 -1.813422 -1.702851
+
+Site: bR
+       mean       std        5%       25%       50%       75%       95%
+0 -0.157187  0.038121 -0.222267 -0.181703 -0.155021 -0.130235 -0.095558
+
+Site: bAR
+       mean       std       5%       25%       50%       75%       95%
+0  0.304799  0.066955  0.19294  0.261902  0.304932  0.350269  0.412381
+
+Site: sigma
+       mean       std        5%       25%       50%       75%       95%
+0  0.902913  0.049275  0.822383  0.870878  0.901005  0.938589  0.983858
+
+</pre></div></div>
+</div>
+<div class="section" id="Model-+-Guide">
+<h2>Model + Guide<a class="headerlink" href="#Model-+-Guide" title="Permalink to this headline">¶</a></h2>
+<p>We will write out the model again, similar to that in <a class="reference internal" href="bayesian_regression.html"><span class="doc">Part I</span></a>, but explicitly without the use of <code class="docutils literal notranslate"><span class="pre">PyroModule</span></code>. We will write out each term in the regression, using the same priors. <code class="docutils literal notranslate"><span class="pre">bA</span></code> and <code class="docutils literal notranslate"><span class="pre">bR</span></code> are regression coefficients corresponding to <code class="docutils literal notranslate"><span class="pre">is_cont_africa</span></code> and <code class="docutils literal notranslate"><span class="pre">ruggedness</span></code>, <code class="docutils literal notranslate"><span class="pre">a</span></code> is the intercept, and <code class="docutils literal notranslate"><span class="pre">bAR</span></code> is the correlating factor between the two features.</p>
+<p>Writing down a guide will proceed in close analogy to the construction of our model, with the key difference that the guide parameters need to be trainable. To do this we register the guide parameters in the ParamStore using <code class="docutils literal notranslate"><span class="pre">pyro.param()</span></code>. Note the positive constraints on scale parameters.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
@@ -595,10 +644,7 @@ div.rendered_html tbody tr:hover {
 <span></span><span class="kn">from</span> <span class="nn">pyro.infer</span> <span class="k">import</span> <span class="n">SVI</span><span class="p">,</span> <span class="n">Trace_ELBO</span>
 
 
-<span class="n">svi</span> <span class="o">=</span> <span class="n">SVI</span><span class="p">(</span><span class="n">model</span><span class="p">,</span>
-          <span class="n">guide</span><span class="p">,</span>
-          <span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">({</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="o">.</span><span class="mi">05</span><span class="p">}),</span>
-          <span class="n">loss</span><span class="o">=</span><span class="n">Trace_ELBO</span><span class="p">())</span>
+<span class="n">svi</span> <span class="o">=</span> <span class="n">SVI</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">guide</span><span class="p">,</span> <span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">({</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="o">.</span><span class="mi">05</span><span class="p">}),</span><span class="n">loss</span><span class="o">=</span><span class="n">Trace_ELBO</span><span class="p">())</span>
 
 <span class="n">is_cont_africa</span><span class="p">,</span> <span class="n">ruggedness</span><span class="p">,</span> <span class="n">log_gdp</span> <span class="o">=</span> <span class="n">train</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">train</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">train</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span>
 <span class="n">pyro</span><span class="o">.</span><span class="n">clear_param_store</span><span class="p">()</span>
@@ -634,7 +680,6 @@ Elbo loss: 250.4274433851242
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">pyro.infer</span> <span class="k">import</span> <span class="n">Predictive</span>
 
-
 <span class="n">num_samples</span> <span class="o">=</span> <span class="mi">1000</span>
 <span class="n">predictive</span> <span class="o">=</span> <span class="n">Predictive</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">guide</span><span class="o">=</span><span class="n">guide</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">)</span>
 <span class="n">svi_samples</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">num_samples</span><span class="p">)</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
@@ -661,8 +706,8 @@ Elbo loss: 250.4274433851242
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 Site: a
-       mean       std       5%       25%       50%       75%      95%
-0  9.177024  0.059607  9.07811  9.140463  9.178211  9.217098  9.27152
+      mean       std       5%       25%       50%       75%      95%
+0  9.17702  0.059607  9.07811  9.140463  9.178211  9.217098  9.27152
 
 Site: bA
        mean       std       5%       25%       50%       75%       95%
@@ -778,7 +823,7 @@ Site: sigma
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/bayesian_regression_ii_18_0.png" src="_images/bayesian_regression_ii_18_0.png" />
+<img alt="_images/bayesian_regression_ii_19_0.png" src="_images/bayesian_regression_ii_19_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
@@ -803,7 +848,7 @@ Site: sigma
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/bayesian_regression_ii_19_0.png" src="_images/bayesian_regression_ii_19_0.png" />
+<img alt="_images/bayesian_regression_ii_20_0.png" src="_images/bayesian_regression_ii_20_0.png" />
 </div>
 </div>
 </div>
@@ -877,7 +922,7 @@ Elbo loss: 249.86634194850922
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/bayesian_regression_ii_23_0.png" src="_images/bayesian_regression_ii_23_0.png" />
+<img alt="_images/bayesian_regression_ii_24_0.png" src="_images/bayesian_regression_ii_24_0.png" />
 </div>
 </div>
 <p>Now let’s compare the posterior computed by the Diagonal Normal guide vs the Multivariate Normal guide. Note that the multivariate distribution is more dispresed than the Diagonal Normal.</p>
@@ -903,7 +948,7 @@ Elbo loss: 249.86634194850922
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/bayesian_regression_ii_25_0.png" src="_images/bayesian_regression_ii_25_0.png" />
+<img alt="_images/bayesian_regression_ii_26_0.png" src="_images/bayesian_regression_ii_26_0.png" />
 </div>
 </div>
 <p>and the Multivariate guide with the posterior computed by HMC. Note that the Multivariate guide better captures the true posterior.</p>
@@ -929,7 +974,7 @@ Elbo loss: 249.86634194850922
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/bayesian_regression_ii_27_0.png" src="_images/bayesian_regression_ii_27_0.png" />
+<img alt="_images/bayesian_regression_ii_28_0.png" src="_images/bayesian_regression_ii_28_0.png" />
 </div>
 </div>
 </div>

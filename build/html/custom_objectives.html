@@ -39,7 +39,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Pyro 模型中使用 PyTorch JIT Compiler" href="jit.html" />
-    <link rel="prev" title="Inference with 离散潜变量" href="enumeration.html" /> 
+    <link rel="prev" title="离散潜变量模型" href="enumeration.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -97,22 +97,23 @@
 <li class="toctree-l1"><a class="reference internal" href="svi_part_i.html">SVI Part I: 随机变分推断基础</a></li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_ii.html">SVI Part II: 条件独立, 子采样和 Amortization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_iii.html">SVI Part III: ELBO 梯度估计</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中模型和数据维度</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中随机函数的维度</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Advanced:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="enumeration.html">Inference with 离散潜变量</a></li>
+<li class="toctree-l1"><a class="reference internal" href="enumeration.html">离散潜变量模型</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">自定义 SVI 目标函数</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#Basic-SVI-Usage">Basic SVI Usage</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#A-Lower-Level-Pattern">A Lower-Level Pattern</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#SVI-的基本用法">SVI 的基本用法</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#修改损失函数">修改损失函数</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#添加正则项">添加正则项</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#梯度截断">梯度截断</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Scaling-the-Loss">Scaling the Loss</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Mixing-Optimizers">Mixing Optimizers</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#Example:-Custom-Regularizer">Example: Custom Regularizer</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Example:-Clipping-Gradients">Example: Clipping Gradients</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Example:-Scaling-the-Loss">Example: Scaling the Loss</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Example:-Mixing-Optimizers">Example: Mixing Optimizers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Example:-Custom-ELBO">Example: Custom ELBO</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#Example:-KL-Annealing">Example: KL Annealing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#自定义-ELBO-损失函数">自定义 ELBO 损失函数</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Simple-ELBO">Simple ELBO</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#KL-Annealing">KL Annealing</a></li>
 </ul>
 </li>
 </ul>
@@ -231,6 +232,224 @@
             
   
 <style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container,
+div.nbinput.container div.prompt,
+div.nbinput.container div.input_area,
+div.nbinput.container div[class*=highlight],
+div.nbinput.container div[class*=highlight] pre,
+div.nboutput.container,
+div.nboutput.container div.prompt,
+div.nboutput.container div.output_area,
+div.nboutput.container div[class*=highlight],
+div.nboutput.container div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    min-width: 5ex;
+    padding-top: 0.3rem;
+    padding-right: 0.3rem;
+    text-align: right;
+    flex: 0;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    background: #f5f5f5;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 0.3rem;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
 /* CSS overrides for sphinx_rtd_theme */
 
 /* 24px margin */
@@ -255,38 +474,88 @@
 </style>
 <div class="section" id="自定义-SVI-目标函数">
 <h1>自定义 SVI 目标函数<a class="headerlink" href="#自定义-SVI-目标函数" title="Permalink to this headline">¶</a></h1>
-<p>Pyro provides support for various optimization-based approaches to Bayesian inference,with <code class="docutils literal notranslate"><span class="pre">Trace_ELBO</span></code> serving as the basic implementation of SVI (stochastic variational inference). See the <a class="reference external" href="http://docs.pyro.ai/en/dev/inference_algos.html#module-pyro.infer.svi">docs</a> for more information on the various SVI implementations and SVI tutorials <a class="reference external" href="http://pyro.ai/examples/svi_part_i.html">I</a>, <a class="reference external" href="http://pyro.ai/examples/svi_part_ii.html">II</a>, and
+<p>（Pyro 用 SVI 为贝叶斯推断提供支持）Pyro provides support for various optimization-based approaches to Bayesian inference, with <code class="docutils literal notranslate"><span class="pre">Trace_ELBO</span></code> serving as the basic implementation of SVI (stochastic variational inference). See the <a class="reference external" href="http://docs.pyro.ai/en/dev/inference_algos.html#module-pyro.infer.svi">docs</a> for more information on the various SVI implementations and SVI tutorials <a class="reference external" href="http://pyro.ai/examples/svi_part_i.html">I</a>, <a class="reference external" href="http://pyro.ai/examples/svi_part_ii.html">II</a>, and
 <a class="reference external" href="http://pyro.ai/examples/svi_part_iii.html">III</a> for background on SVI.</p>
-<p>In this tutorial we show how advanced users can modify and/or augment the variational objectives (alternatively: loss functions) provided by Pyro to support special use cases.</p>
-<p><strong>目录</strong></p>
-<ol class="arabic simple">
-<li><p><a class="reference external" href="#Basic-SVI-Usage">Basic SVI Usage</a></p>
-<ol class="arabic simple">
-<li><p><a class="reference external" href="#A-Lower-Level-Pattern">A Lower Level Pattern</a></p></li>
-</ol>
-</li>
-<li><p><a class="reference external" href="#Example:-Custom-Regularizer">Example: Custom Regularizer</a></p></li>
-<li><p><a class="reference external" href="#Example:-Scaling-the-Loss">Example: Scaling the Loss</a></p></li>
-<li><p><a class="reference external" href="#Example:-Mixing-Optimizers">Example: Mixing Optimizers</a></p></li>
-<li><p><a class="reference external" href="#Example:-Custom-ELBO">Example: Custom ELBO</a></p></li>
-<li><p><a class="reference external" href="#Example:-KL-Annealing">Example: KL Annealing</a></p></li>
-</ol>
-<div class="section" id="Basic-SVI-Usage">
-<h2>Basic SVI Usage<a class="headerlink" href="#Basic-SVI-Usage" title="Permalink to this headline">¶</a></h2>
-<p>We first review the basic usage pattern of <code class="docutils literal notranslate"><span class="pre">SVI</span></code> objects in Pyro. We assume that the user has defined a <code class="docutils literal notranslate"><span class="pre">model</span></code> and a <code class="docutils literal notranslate"><span class="pre">guide</span></code>. The user then creates an optimizer and an <code class="docutils literal notranslate"><span class="pre">SVI</span></code> object:</p>
+<p>（本教程将用示例说明如何定制变分目标函数）In this tutorial we show how advanced users can modify and/or augment the variational objectives (alternatively: loss functions) provided by Pyro to support special use cases.</p>
+<div class="section" id="SVI-的基本用法">
+<h2>SVI 的基本用法<a class="headerlink" href="#SVI-的基本用法" title="Permalink to this headline">¶</a></h2>
+<p>我们首先回顾 Pyro 中 <code class="docutils literal notranslate"><span class="pre">SVI</span></code> objects 的使用方法. We assume that the user has defined a <code class="docutils literal notranslate"><span class="pre">model</span></code> and a <code class="docutils literal notranslate"><span class="pre">guide</span></code>. The user then creates an optimizer and an <code class="docutils literal notranslate"><span class="pre">SVI</span></code> object:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">({</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span> <span class="s2">&quot;betas&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.90</span><span class="p">,</span> <span class="mf">0.999</span><span class="p">)})</span>
 <span class="n">svi</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">infer</span><span class="o">.</span><span class="n">SVI</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">guide</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="o">=</span><span class="n">pyro</span><span class="o">.</span><span class="n">infer</span><span class="o">.</span><span class="n">Trace_ELBO</span><span class="p">())</span>
 </pre></div>
 </div>
 <p>Gradient steps can then be taken with a call to <code class="docutils literal notranslate"><span class="pre">svi.step(...)</span></code>. The arguments to <code class="docutils literal notranslate"><span class="pre">step()</span></code> are then passed to <code class="docutils literal notranslate"><span class="pre">model</span></code> and <code class="docutils literal notranslate"><span class="pre">guide</span></code>.</p>
-<div class="section" id="A-Lower-Level-Pattern">
-<h3>A Lower-Level Pattern<a class="headerlink" href="#A-Lower-Level-Pattern" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># +++++++++++ 下节预告</span>
+<span class="c1"># 加上一个正则项</span>
+<span class="kn">import</span> <span class="nn">math</span><span class="o">,</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">torch</span><span class="o">,</span> <span class="nn">pyro</span>
+<span class="kn">import</span> <span class="nn">torch.distributions.constraints</span> <span class="k">as</span> <span class="nn">constraints</span>
+<span class="kn">import</span> <span class="nn">pyro.distributions</span> <span class="k">as</span> <span class="nn">dist</span>
+<span class="kn">from</span> <span class="nn">pyro.optim</span> <span class="k">import</span> <span class="n">Adam</span>
+<span class="kn">from</span> <span class="nn">pyro.infer</span> <span class="k">import</span> <span class="n">SVI</span><span class="p">,</span> <span class="n">Trace_ELBO</span>
+
+<span class="k">assert</span> <span class="n">pyro</span><span class="o">.</span><span class="n">__version__</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;1.3.0&#39;</span><span class="p">)</span>
+<span class="n">pyro</span><span class="o">.</span><span class="n">enable_validation</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">pyro</span><span class="o">.</span><span class="n">clear_param_store</span><span class="p">()</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">data</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">)])</span>
+<span class="n">data</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)])</span>
+
+<span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="n">alpha0</span><span class="p">,</span> <span class="n">beta0</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">10.0</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">10.0</span><span class="p">)</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;latent_fairness&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Beta</span><span class="p">(</span><span class="n">alpha0</span><span class="p">,</span> <span class="n">beta0</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
+        <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;obs_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">guide</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="n">alpha_q</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;alpha_q&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">15.0</span><span class="p">),</span> <span class="n">constraint</span><span class="o">=</span><span class="n">constraints</span><span class="o">.</span><span class="n">positive</span><span class="p">)</span>
+    <span class="n">beta_q</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;beta_q&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">15.0</span><span class="p">),</span> <span class="n">constraint</span><span class="o">=</span><span class="n">constraints</span><span class="o">.</span><span class="n">positive</span><span class="p">)</span>
+    <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;latent_fairness&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Beta</span><span class="p">(</span><span class="n">alpha_q</span><span class="p">,</span> <span class="n">beta_q</span><span class="p">))</span>
+
+<span class="n">adam_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">0.0005</span><span class="p">,</span> <span class="s2">&quot;betas&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.90</span><span class="p">,</span> <span class="mf">0.999</span><span class="p">)}</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">Adam</span><span class="p">(</span><span class="n">adam_params</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;clip_norm&quot;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">})</span> <span class="c1"># 添加梯度截断</span>
+<span class="c1"># loss_fn = pyro.infer.Trace_ELBO().differentiable_loss # 添加正则项</span>
+
+<span class="n">svi</span> <span class="o">=</span> <span class="n">SVI</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">guide</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="o">=</span><span class="n">Trace_ELBO</span><span class="p">())</span>
+
+<span class="n">n_steps</span> <span class="o">=</span> <span class="mi">2000</span>
+<span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_steps</span><span class="p">):</span>
+    <span class="n">svi</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">step</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+<span class="n">alpha_q</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;alpha_q&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<span class="n">beta_q</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;beta_q&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<span class="n">inferred_mean</span> <span class="o">=</span> <span class="n">alpha_q</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha_q</span> <span class="o">+</span> <span class="n">beta_q</span><span class="p">)</span>
+<span class="n">factor</span> <span class="o">=</span> <span class="n">beta_q</span> <span class="o">/</span> <span class="p">(</span><span class="n">alpha_q</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">alpha_q</span> <span class="o">+</span> <span class="n">beta_q</span><span class="p">))</span>
+<span class="n">inferred_std</span> <span class="o">=</span> <span class="n">inferred_mean</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">factor</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">based on the data and our prior belief, the fairness &quot;</span> <span class="o">+</span>
+      <span class="s2">&quot;of the coin is </span><span class="si">%.3f</span><span class="s2"> +- </span><span class="si">%.3f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">inferred_mean</span><span class="p">,</span> <span class="n">inferred_std</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+....................
+based on the data and our prior belief, the fairness of the coin is 0.534 +- 0.090
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="修改损失函数">
+<h2>修改损失函数<a class="headerlink" href="#修改损失函数" title="Permalink to this headline">¶</a></h2>
 <p>The nice thing about the above pattern is that it allows Pyro to take care of various details for us, for example:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">pyro.optim.Adam</span></code> dynamically creates a new <code class="docutils literal notranslate"><span class="pre">torch.optim.Adam</span></code> optimizer whenever a new parameter is encountered</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">SVI.step()</span></code> zeros gradients between gradient steps</p></li>
 </ul>
-<p>If we want more control, we can directly manipulate the differentiable loss method of the various <code class="docutils literal notranslate"><span class="pre">ELBO</span></code> classes. For example, (assuming we know all the parameters in advance) this is equivalent to the previous code snippet:</p>
+<p>（直接操作 loss 方法）If we want more control, we can directly manipulate the differentiable loss method of the various <code class="docutils literal notranslate"><span class="pre">ELBO</span></code> classes. For example, (assuming we know all the parameters in advance) this is equivalent to the previous code snippet:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># define optimizer and loss function</span>
 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">my_parameters</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span> <span class="s2">&quot;betas&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.90</span><span class="p">,</span> <span class="mf">0.999</span><span class="p">)})</span>
 <span class="n">loss_fn</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">infer</span><span class="o">.</span><span class="n">Trace_ELBO</span><span class="p">()</span><span class="o">.</span><span class="n">differentiable_loss</span>
@@ -298,10 +567,8 @@
 <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
 </pre></div>
 </div>
-</div>
-</div>
-<div class="section" id="Example:-Custom-Regularizer">
-<h2>Example: Custom Regularizer<a class="headerlink" href="#Example:-Custom-Regularizer" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="添加正则项">
+<h3>添加正则项<a class="headerlink" href="#添加正则项" title="Permalink to this headline">¶</a></h3>
 <p>Suppose we want to add a custom regularization term to the SVI loss. Using the above usage pattern, this is easy to do. First we define our regularizer:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">my_custom_L2_regularizer</span><span class="p">(</span><span class="n">my_parameters</span><span class="p">):</span>
     <span class="n">reg_loss</span> <span class="o">=</span> <span class="mf">0.0</span>
@@ -316,8 +583,8 @@
 </pre></div>
 </div>
 </div>
-<div class="section" id="Example:-Clipping-Gradients">
-<h2>Example: Clipping Gradients<a class="headerlink" href="#Example:-Clipping-Gradients" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="梯度截断">
+<h3>梯度截断<a class="headerlink" href="#梯度截断" title="Permalink to this headline">¶</a></h3>
 <p>For some models the loss gradient can explode during training, leading to overflow and <code class="docutils literal notranslate"><span class="pre">NaN</span></code> values. One way to protect against this is with gradient clipping. The optimizers in <code class="docutils literal notranslate"><span class="pre">pyro.optim</span></code> take an optional dictionary of <code class="docutils literal notranslate"><span class="pre">clip_args</span></code> which allows clipping either the gradient norm or the gradient value to fall within the given limit.</p>
 <p>To change the basic example above:</p>
 <div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">- optimizer = pyro.optim.Adam({&quot;lr&quot;: 0.001, &quot;betas&quot;: (0.90, 0.999)})</span>
@@ -325,8 +592,8 @@
 </pre></div>
 </div>
 </div>
-<div class="section" id="Example:-Scaling-the-Loss">
-<h2>Example: Scaling the Loss<a class="headerlink" href="#Example:-Scaling-the-Loss" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Scaling-the-Loss">
+<h3>Scaling the Loss<a class="headerlink" href="#Scaling-the-Loss" title="Permalink to this headline">¶</a></h3>
 <p>Depending on the optimization algorithm, the scale of the loss may or not matter. Suppose we want to scale our loss function by the number of datapoints before we differentiate it. This is easily done:</p>
 <div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gd">- loss = loss_fn(model, guide)</span>
 <span class="gi">+ loss = loss_fn(model, guide) / N_data</span>
@@ -343,8 +610,8 @@
 </pre></div>
 </div>
 </div>
-<div class="section" id="Example:-Mixing-Optimizers">
-<h2>Example: Mixing Optimizers<a class="headerlink" href="#Example:-Mixing-Optimizers" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Mixing-Optimizers">
+<h3>Mixing Optimizers<a class="headerlink" href="#Mixing-Optimizers" title="Permalink to this headline">¶</a></h3>
 <p>The various optimizers in <code class="docutils literal notranslate"><span class="pre">pyro.optim</span></code> allow the user to specify optimization settings (e.g. learning rates) on a per-parameter basis. But what if we want to use different optimization algorithms for different parameters? We can do this using Pyro’s <code class="docutils literal notranslate"><span class="pre">MultiOptimizer</span></code> (see below), but we can also achieve the same thing if we directly manipulate <code class="docutils literal notranslate"><span class="pre">differentiable_loss</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">adam</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">adam_parameters</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span> <span class="s2">&quot;betas&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.90</span><span class="p">,</span> <span class="mf">0.999</span><span class="p">)})</span>
 <span class="n">sgd</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">SGD</span><span class="p">(</span><span class="n">sgd_parameters</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">0.0001</span><span class="p">})</span>
@@ -375,8 +642,11 @@
 </pre></div>
 </div>
 </div>
-<div class="section" id="Example:-Custom-ELBO">
-<h2>Example: Custom ELBO<a class="headerlink" href="#Example:-Custom-ELBO" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="自定义-ELBO-损失函数">
+<h2>自定义 ELBO 损失函数<a class="headerlink" href="#自定义-ELBO-损失函数" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Simple-ELBO">
+<h3>Simple ELBO<a class="headerlink" href="#Simple-ELBO" title="Permalink to this headline">¶</a></h3>
 <p>In the previous three examples we bypassed creating a <code class="docutils literal notranslate"><span class="pre">SVI</span></code> object and directly manipulated the differentiable loss function provided by an <code class="docutils literal notranslate"><span class="pre">ELBO</span></code> implementation. Another thing we can do is create custom <code class="docutils literal notranslate"><span class="pre">ELBO</span></code> implementations and pass those into the <code class="docutils literal notranslate"><span class="pre">SVI</span></code> machinery. For example, a simplified version of a <code class="docutils literal notranslate"><span class="pre">Trace_ELBO</span></code> loss function might look as follows:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># note that simple_elbo takes a model, a guide, and their respective arguments as inputs</span>
 <span class="k">def</span> <span class="nf">simple_elbo</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">guide</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -392,8 +662,9 @@
 </pre></div>
 </div>
 <p>Note that this is basically what the <code class="docutils literal notranslate"><span class="pre">elbo</span></code> implementation in <a class="reference external" href="https://github.com/pyro-ppl/pyro/blob/dev/pyro/contrib/minipyro.py">“mini-pyro”</a> looks like.</p>
-<div class="section" id="Example:-KL-Annealing">
-<h3>Example: KL Annealing<a class="headerlink" href="#Example:-KL-Annealing" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="KL-Annealing">
+<h3>KL Annealing<a class="headerlink" href="#KL-Annealing" title="Permalink to this headline">¶</a></h3>
 <p>In the <a class="reference external" href="http://pyro.ai/examples/dmm.html">Deep Markov Model Tutorial</a> the ELBO variational objective is modified during training. In particular the various KL-divergence terms between latent random variables are scaled downward (i.e. annealed) relative to the log probabilities of the observed data. In the tutorial this is accomplished using <code class="docutils literal notranslate"><span class="pre">poutine.scale</span></code>. We can accomplish the same thing by defining a custom loss function. This latter option is not a very elegant pattern but we include it
 anyway to show the flexibility we have at our disposal.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">simple_elbo_kl_annealing</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">guide</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -424,6 +695,15 @@ anyway to show the flexibility we have at our disposal.</p>
 <span class="n">svi</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">other_args</span><span class="p">,</span> <span class="n">annealing_factor</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">latents_to_anneal</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my_latent&quot;</span><span class="p">])</span>
 </pre></div>
 </div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>
+</pre></div>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -439,7 +719,7 @@ anyway to show the flexibility we have at our disposal.</p>
         <a href="jit.html" class="btn btn-neutral float-right" title="Pyro 模型中使用 PyTorch JIT Compiler" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="enumeration.html" class="btn btn-neutral float-left" title="Inference with 离散潜变量" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="enumeration.html" class="btn btn-neutral float-left" title="离散潜变量模型" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

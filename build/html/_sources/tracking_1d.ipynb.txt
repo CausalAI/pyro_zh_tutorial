@@ -2,19 +2,23 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "# 跟踪未知数量的对象\n",
     "\n",
     "Tracking an Unknown Number of Objects\n",
     "\n",
-    "While SVI can be used to learn components and assignments of a mixture model, pyro.contrib.tracking provides more efficient inference algorithms to estimate assignments. This notebook demonstrates how to use the `MarginalAssignmentPersistent` inside SVI."
+    "SVI 可以用于学习混合模型的 components 和 assignments, `pyro.contrib.tracking` 提供了一种更加高效的办法来估计 assignments. 本 notebook 演示了如何在SVI中使用 `MarginalAssignmentPersistent`。"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": 1,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "import math\n",
@@ -39,15 +43,19 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
-    "Let's consider a model with deterministic dynamics, say sinusoids with known period but unknown phase and amplitude."
+    "让我们考虑一个具有确定性动力学的模型，比如说周期已知但相位和幅度未知的正弦曲线。"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": 2,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "def get_dynamics(num_frames):\n",
@@ -57,15 +65,19 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
-    "It's tricky to define a fully generative model, so instead we'll separate our data generation process `generate_data()` from a factor graph `model()` that will be used in inference."
+    "直接把对应的生成模型定义出来很棘手, 所以我们把数据生成过程 `generate_data()` 和推断会用到的因子图 `model()` 分开定义。"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 3,
-   "metadata": {},
+   "execution_count": 5,
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "def generate_data(args):\n",
@@ -98,7 +110,9 @@
   {
    "cell_type": "code",
    "execution_count": 4,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "def model(args, observations):\n",
@@ -141,7 +155,9 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "This guide uses a smart assignment solver but a naive state estimator. A smarter implementation would use message passing also for state estimation, e.g. a Kalman filter-smoother."
    ]
@@ -149,7 +165,9 @@
   {
    "cell_type": "code",
    "execution_count": 5,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "def guide(args, observations):\n",
@@ -188,7 +206,9 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "We'll define a global config object to make it easy to port code to `argparse`."
    ]
@@ -196,7 +216,9 @@
   {
    "cell_type": "code",
    "execution_count": 6,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "args = type('Args', (object,), {})  # A fake ArgumentParser.parse_args() result.\n",
@@ -213,7 +235,9 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "## Generate data"
    ]
@@ -221,7 +245,9 @@
   {
    "cell_type": "code",
    "execution_count": 7,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "name": "stdout",
@@ -245,7 +271,9 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "## Train"
    ]
@@ -253,7 +281,9 @@
   {
    "cell_type": "code",
    "execution_count": 8,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "def plot_solution(message=''):\n",
@@ -284,7 +314,9 @@
   {
    "cell_type": "code",
    "execution_count": 9,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "data": {
@@ -306,7 +338,9 @@
   {
    "cell_type": "code",
    "execution_count": 10,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "name": "stdout",
@@ -339,7 +373,9 @@
   {
    "cell_type": "code",
    "execution_count": 11,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "data": {
@@ -359,7 +395,9 @@
   {
    "cell_type": "code",
    "execution_count": 12,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "data": {
@@ -379,7 +417,9 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": []
   }
@@ -417,5 +457,5 @@
   }
  },
  "nbformat": 4,
- "nbformat_minor": 2
+ "nbformat_minor": 4
 }

@@ -104,11 +104,11 @@
 <li class="toctree-l1"><a class="reference internal" href="svi_part_i.html">SVI Part I: 随机变分推断基础</a></li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_ii.html">SVI Part II: 条件独立, 子采样和 Amortization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_iii.html">SVI Part III: ELBO 梯度估计</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中模型和数据维度</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中随机函数的维度</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Advanced:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="enumeration.html">Inference with 离散潜变量</a></li>
+<li class="toctree-l1"><a class="reference internal" href="enumeration.html">离散潜变量模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="custom_objectives.html">自定义 SVI 目标函数</a></li>
 <li class="toctree-l1"><a class="reference internal" href="jit.html">Pyro 模型中使用 PyTorch JIT Compiler</a></li>
 <li class="toctree-l1"><a class="reference internal" href="minipyro.html">Mini-Pyro</a></li>
@@ -482,7 +482,7 @@ div.rendered_html tbody tr:hover {
 <li><p><a class="reference external" href="#通用概率编程">通用概率编程</a></p></li>
 </ul>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -630,7 +630,7 @@ tensor(1.2917)
 <p>正如我们将看到的，这就是 Pyro 如何实现 various manipulations that underlie inference algorithms.</p>
 <p>我们已经介绍了 <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> 和 <code class="docutils literal notranslate"><span class="pre">pyro.distributions</span></code>，现在我们可以将我们的简单模型重写为Pyro程序：</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -652,12 +652,49 @@ tensor(1.2917)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-(&#39;sunny&#39;, 94.37557983398438)
-(&#39;sunny&#39;, 72.5186767578125)
-(&#39;cloudy&#39;, 54.18292999267578)
+(&#39;cloudy&#39;, 51.373016357421875)
+(&#39;cloudy&#39;, 52.28388595581055)
+(&#39;sunny&#39;, 70.28937530517578)
 </pre></div></div>
 </div>
 <p>Procedurally，<code class="docutils literal notranslate"><span class="pre">weather()</span></code> 仍然是一个non-deterministic Python callable that returns two random samples. Because the randomness is now invoked with <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code>, however, 它远不止于此。具体来说，<code class="docutils literal notranslate"><span class="pre">weather()</span></code> 定义了两个有名字的随机变量的联合分布: <code class="docutils literal notranslate"><span class="pre">cloudy</span></code> 和 <code class="docutils literal notranslate"><span class="pre">temp</span></code>. 也就是说我们定义了一个可以用于推理的概率模型 using the techniques of probability theory. 例如，我们可能会问：如果我观察到70度的温度，多云的可能性有多大？下一个教程将讨论如何提出和回答这类问题。</p>
+<p>一个重要的问题是：Pyro 后段如何通过名字查看对应的随机变量和样本呢？</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[135]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">pyro.poutine</span> <span class="k">as</span> <span class="nn">poutine</span>
+<span class="kn">import</span> <span class="nn">pyro.distributions</span> <span class="k">as</span> <span class="nn">dist</span>
+<span class="kn">from</span> <span class="nn">pyro.poutine.trace_messenger</span> <span class="k">import</span> <span class="n">TraceMessenger</span>
+<span class="kn">from</span> <span class="nn">pyro.poutine.condition_messenger</span> <span class="k">import</span> <span class="n">ConditionMessenger</span>
+
+<span class="n">cond_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;temp&quot;</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mi">52</span><span class="p">)}</span>
+
+<span class="k">with</span> <span class="n">TraceMessenger</span><span class="p">()</span> <span class="k">as</span> <span class="n">tracer</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">ConditionMessenger</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">cond_data</span><span class="p">):</span>
+        <span class="n">weather</span><span class="p">()</span>
+
+<span class="n">trace</span> <span class="o">=</span> <span class="n">tracer</span><span class="o">.</span><span class="n">trace</span>
+<span class="n">logp</span> <span class="o">=</span> <span class="mf">0.</span>
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">trace</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">node</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;sample&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;is_observed&quot;</span><span class="p">]:</span>
+            <span class="k">assert</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="n">cond_data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="n">logp</span> <span class="o">=</span> <span class="n">logp</span> <span class="o">+</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;fn&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">node</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+cloudy {&#39;type&#39;: &#39;sample&#39;, &#39;name&#39;: &#39;cloudy&#39;, &#39;fn&#39;: Bernoulli(probs: 0.30000001192092896), &#39;is_observed&#39;: False, &#39;args&#39;: (), &#39;kwargs&#39;: {}, &#39;value&#39;: tensor(0.), &#39;infer&#39;: {}, &#39;scale&#39;: 1.0, &#39;mask&#39;: None, &#39;cond_indep_stack&#39;: (), &#39;done&#39;: True, &#39;stop&#39;: False, &#39;continuation&#39;: None}
+temp {&#39;type&#39;: &#39;sample&#39;, &#39;name&#39;: &#39;temp&#39;, &#39;fn&#39;: Normal(loc: 75.0, scale: 15.0), &#39;is_observed&#39;: True, &#39;args&#39;: (), &#39;kwargs&#39;: {}, &#39;value&#39;: tensor(52), &#39;infer&#39;: {}, &#39;scale&#39;: 1.0, &#39;mask&#39;: None, &#39;cond_indep_stack&#39;: (), &#39;done&#39;: True, &#39;stop&#39;: False, &#39;continuation&#39;: None}
+</pre></div></div>
+</div>
 </div>
 <div class="section" id="通用概率编程">
 <h2>通用概率编程<a class="headerlink" href="#通用概率编程" title="Permalink to this headline">¶</a></h2>
@@ -683,20 +720,21 @@ tensor(1.2917)
 <p>(这种模块化是非常强大的) This kind of modularity, familiar to any programmer, is obviously very powerful. 但是它强大到足以包含我们想要表达的所有不同类型的模型吗？</p>
 <p>It turns out that because Pyro is embedded in Python, stochastic functions can contain arbitrarily complex deterministic Python and randomness can freely affect control flow. 例如，我们可以构造递归函数 that terminate their recursion nondeterministically, provided we take care to pass <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> unique sample names whenever it’s called. 例如我们可以定义一个几何分布，来计算直到第一次成功之前的失败次数，如下所示：</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[501]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">geometric</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span></span><span class="k">def</span> <span class="nf">geometric</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">t</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">t</span>
     <span class="c1"># 该函数表示第 t 次失败之后, 继续尝试直到成功，返回总共失败次数。</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;x_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t</span><span class="p">),</span> <span class="n">pyro</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">p</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">t</span>
+        <span class="k">return</span> <span class="mi">0</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">t_update</span> <span class="o">=</span> <span class="n">t</span><span class="o">+</span><span class="mi">1</span>
-        <span class="k">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">geometric</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">t_update</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">1</span><span class="o">+</span><span class="n">geometric</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">t_update</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="n">geometric</span><span class="p">(</span><span class="mf">0.5</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">geometric</span><span class="p">(</span><span class="mf">0.1</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
@@ -705,10 +743,55 @@ tensor(1.2917)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-2
+13
 </pre></div></div>
 </div>
 <p>Note that the names <code class="docutils literal notranslate"><span class="pre">x_0</span></code>, <code class="docutils literal notranslate"><span class="pre">x_1</span></code>, etc., in <code class="docutils literal notranslate"><span class="pre">geometric()</span></code> are generated dynamically and that different executions can have different numbers of named random variables.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[535]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">cond_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;last&quot;</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mi">52</span><span class="p">)}</span>
+
+<span class="k">with</span> <span class="n">TraceMessenger</span><span class="p">()</span> <span class="k">as</span> <span class="n">tracer</span><span class="p">:</span>
+    <span class="n">cond_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;x_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">geometric</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)):</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">cond_data</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">cond_data</span><span class="p">)</span>
+<span class="n">trace</span> <span class="o">=</span> <span class="n">tracer</span><span class="o">.</span><span class="n">trace</span>
+<span class="n">logp</span> <span class="o">=</span> <span class="mf">0.</span>
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">trace</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">node</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;sample&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;is_observed&quot;</span><span class="p">]:</span>
+            <span class="k">assert</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="n">cond_data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;观测变量&#39;</span><span class="p">,</span> <span class="n">node</span><span class="p">)</span>
+        <span class="n">logp</span> <span class="o">=</span> <span class="n">logp</span> <span class="o">+</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;fn&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">node</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+<span class="n">logp</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+{&#39;x_2&#39;: tensor(52)}
+x_0 {&#39;type&#39;: &#39;sample&#39;, &#39;name&#39;: &#39;x_0&#39;, &#39;fn&#39;: Bernoulli(probs: 0.5), &#39;is_observed&#39;: False, &#39;args&#39;: (), &#39;kwargs&#39;: {}, &#39;value&#39;: tensor(0.), &#39;infer&#39;: {}, &#39;scale&#39;: 1.0, &#39;mask&#39;: None, &#39;cond_indep_stack&#39;: (), &#39;done&#39;: True, &#39;stop&#39;: False, &#39;continuation&#39;: None}
+x_1 {&#39;type&#39;: &#39;sample&#39;, &#39;name&#39;: &#39;x_1&#39;, &#39;fn&#39;: Bernoulli(probs: 0.5), &#39;is_observed&#39;: False, &#39;args&#39;: (), &#39;kwargs&#39;: {}, &#39;value&#39;: tensor(0.), &#39;infer&#39;: {}, &#39;scale&#39;: 1.0, &#39;mask&#39;: None, &#39;cond_indep_stack&#39;: (), &#39;done&#39;: True, &#39;stop&#39;: False, &#39;continuation&#39;: None}
+x_2 {&#39;type&#39;: &#39;sample&#39;, &#39;name&#39;: &#39;x_2&#39;, &#39;fn&#39;: Bernoulli(probs: 0.5), &#39;is_observed&#39;: False, &#39;args&#39;: (), &#39;kwargs&#39;: {}, &#39;value&#39;: tensor(1.), &#39;infer&#39;: {}, &#39;scale&#39;: 1.0, &#39;mask&#39;: None, &#39;cond_indep_stack&#39;: (), &#39;done&#39;: True, &#39;stop&#39;: False, &#39;continuation&#39;: None}
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[535]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+tensor(-2.0794)
+</pre></div></div>
+</div>
 <p>我们也可以定义把其他随机函数当成输入或者输出的随机函数：</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
@@ -725,7 +808,7 @@ tensor(1.2917)
 </pre></div>
 </div>
 <div class="output_area docutils container">
-<img alt="_images/intro_part_i_24_0.svg" src="_images/intro_part_i_24_0.svg" /></div>
+<img alt="_images/intro_part_i_28_0.svg" src="_images/intro_part_i_28_0.svg" /></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
