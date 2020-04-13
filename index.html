@@ -100,7 +100,7 @@
 </ul>
 <p class="caption"><span class="caption-text">Advanced:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="enumeration.html">Inference with 离散潜变量</a></li>
+<li class="toctree-l1"><a class="reference internal" href="enumeration.html">离散潜变量模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="custom_objectives.html">自定义 SVI 目标函数</a></li>
 <li class="toctree-l1"><a class="reference internal" href="jit.html">Pyro 模型中使用 PyTorch JIT Compiler</a></li>
 <li class="toctree-l1"><a class="reference internal" href="minipyro.html">Mini-Pyro</a></li>
@@ -242,7 +242,7 @@
 <h1>Welcome to Pyro Examples and Tutorials!<a class="headerlink" href="#welcome-to-pyro-examples-and-tutorials" title="Permalink to this headline">¶</a></h1>
 <p>— by Heyang Gong</p>
 <p>Pyro 是一个 Deep Universal Probabilistic Programming, 将会是我们 Causal AI 的一个重要编程框架。这是一个 Pyro 教程的中文编译项目，我们的翻译一方面仅仅翻译部分内容使之尽量接近原来的官方教程，另外一方面会加入一些个人的总结的理解。</p>
-<p>需要注意：在本教程中，我们混用了随机函数，函数，分布，随机变量这几个概念，他们都是 概率程序(probabilistic programs)的不同说法。</p>
+<p>需要注意：在本教程中，我们混用了随机函数，函数，分布，随机变量这几个概念，他们都是概率程序(probabilistic programs)的不同说法。</p>
 <p>Causal AI: <a class="reference external" href="https://sites.google.com/view/minituring/">https://sites.google.com/view/minituring/</a></p>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Introduction:</span></p>
@@ -299,20 +299,17 @@
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Advanced:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="enumeration.html">Inference with 离散潜变量</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="enumeration.html#Overview">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="enumeration.html">离散潜变量模型</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="enumeration.html#概览">概览</a></li>
 <li class="toctree-l2"><a class="reference internal" href="enumeration.html#Mechanics-of-enumeration">Mechanics of enumeration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="enumeration.html#Plates-and-enumeration">Plates and enumeration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="enumeration.html#Time-series-example">Time series example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="enumeration.html#时间序列示例">时间序列示例</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="custom_objectives.html">自定义 SVI 目标函数</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="custom_objectives.html#Basic-SVI-Usage">Basic SVI Usage</a></li>
-<li class="toctree-l2"><a class="reference internal" href="custom_objectives.html#Example:-Custom-Regularizer">Example: Custom Regularizer</a></li>
-<li class="toctree-l2"><a class="reference internal" href="custom_objectives.html#Example:-Clipping-Gradients">Example: Clipping Gradients</a></li>
-<li class="toctree-l2"><a class="reference internal" href="custom_objectives.html#Example:-Scaling-the-Loss">Example: Scaling the Loss</a></li>
-<li class="toctree-l2"><a class="reference internal" href="custom_objectives.html#Example:-Mixing-Optimizers">Example: Mixing Optimizers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="custom_objectives.html#Example:-Custom-ELBO">Example: Custom ELBO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="custom_objectives.html#SVI-的基本用法">SVI 的基本用法</a></li>
+<li class="toctree-l2"><a class="reference internal" href="custom_objectives.html#修改损失函数">修改损失函数</a></li>
+<li class="toctree-l2"><a class="reference internal" href="custom_objectives.html#自定义-ELBO-损失函数">自定义 ELBO 损失函数</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="jit.html">Pyro 模型中使用 PyTorch JIT Compiler</a><ul>
@@ -449,9 +446,8 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="easyguide.html">用 EasyGuide 构建 guides</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="easyguide.html#Modeling-time-series-data">Modeling time series data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="easyguide.html#Writing-a-guide-without-EasyGuide">Writing a guide without EasyGuide</a></li>
-<li class="toctree-l2"><a class="reference internal" href="easyguide.html#Using-EasyGuide">Using EasyGuide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="easyguide.html#时间序列建模">时间序列建模</a></li>
+<li class="toctree-l2"><a class="reference internal" href="easyguide.html#用-EasyGuide-快速构建-guide">用 EasyGuide 快速构建 guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="easyguide.html#Amortized-guides">Amortized guides</a></li>
 </ul>
 </li>

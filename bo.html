@@ -101,7 +101,7 @@
 </ul>
 <p class="caption"><span class="caption-text">Advanced:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="enumeration.html">Inference with 离散潜变量</a></li>
+<li class="toctree-l1"><a class="reference internal" href="enumeration.html">离散潜变量模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="custom_objectives.html">自定义 SVI 目标函数</a></li>
 <li class="toctree-l1"><a class="reference internal" href="jit.html">Pyro 模型中使用 PyTorch JIT Compiler</a></li>
 <li class="toctree-l1"><a class="reference internal" href="minipyro.html">Mini-Pyro</a></li>
@@ -565,17 +565,18 @@ will guide the query points <span class="math notranslate nohighlight">\(x_n\)</
 \[y\sim f+\epsilon,\]</div>
 <p>where <span class="math notranslate nohighlight">\(\epsilon\)</span> is i.i.d. Gaussian noise and <span class="math notranslate nohighlight">\(k(X,X)\)</span> is a covariance matrix whose entries are given by <span class="math notranslate nohighlight">\(k(x,x^\prime)\)</span> for each pair of inputs <span class="math notranslate nohighlight">\((x,x^\prime)\)</span>.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">graphviz</span> <span class="k">import</span> <span class="n">Source</span>
 <span class="n">Source</span><span class="p">(</span><span class="s1">&#39;digraph{rankdir=LR; X -&gt; f[label=&quot;k(X, X)&quot;]; f -&gt; y}&#39;</span><span class="p">)</span>
+<span class="c1"># 为什么这种理解不对？请查看高斯过程机器学习</span>
 </pre></div>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
 <div class="output_area docutils container">

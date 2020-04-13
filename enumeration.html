@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Inference with 离散潜变量 &mdash; Pyro Tutorials 编译 1.3.0 documentation</title>
+  <title>离散潜变量模型 &mdash; Pyro Tutorials 编译 1.3.0 documentation</title>
   
 
   
@@ -101,12 +101,12 @@
 </ul>
 <p class="caption"><span class="caption-text">Advanced:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Inference with 离散潜变量</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#Overview">Overview</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">离散潜变量模型</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#概览">概览</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Mechanics-of-enumeration">Mechanics of enumeration</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#Multiple-latent-variables">Multiple latent variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#多元潜变量">多元潜变量</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#Examining-discrete-latent-states">Examining discrete latent states</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#Indexing-with-enumerated-variables">Indexing with enumerated variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#枚举变量的索引">枚举变量的索引</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#Plates-and-enumeration">Plates and enumeration</a><ul>
@@ -118,7 +118,7 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#Time-series-example">Time series example</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#时间序列示例">时间序列示例</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#How-to-enumerate-more-than-25-variables">How to enumerate more than 25 variables</a></li>
 </ul>
 </li>
@@ -218,7 +218,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Inference with 离散潜变量</li>
+      <li>离散潜变量模型</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -479,9 +479,9 @@ div.rendered_html tbody tr:hover {
     text-align: unset;
 }
 </style>
-<div class="section" id="Inference-with-离散潜变量">
-<h1>Inference with 离散潜变量<a class="headerlink" href="#Inference-with-离散潜变量" title="Permalink to this headline">¶</a></h1>
-<p>This tutorial describes Pyro’s enumeration strategy for discrete latent variable models. 本教程假定读者已经熟悉 <a class="reference external" href="http://pyro.ai/examples/tensor_shapes.html">Tensor Shapes Tutorial</a>.</p>
+<div class="section" id="离散潜变量模型">
+<h1>离散潜变量模型<a class="headerlink" href="#离散潜变量模型" title="Permalink to this headline">¶</a></h1>
+<p>本教程讲解 Pyro 离散潜变量模型的枚举策略. 本教程假定读者已经熟悉 <a class="reference external" href="http://pyro.ai/examples/tensor_shapes.html">Tensor Shapes Tutorial</a>.</p>
 <p><strong>Summary</strong></p>
 <ul class="simple">
 <li><p>Pyro implements automatic enumeration over discrete latent variables.</p></li>
@@ -492,27 +492,6 @@ div.rendered_html tbody tr:hover {
 <li><p>Write your models to allow arbitrarily deep batching on the left, e.g. use broadcasting.</p></li>
 <li><p>Inference cost is exponential in treewidth, so try to write models with narrow treewidth.</p></li>
 <li><p>If you have trouble, ask for help on <a class="reference external" href="https://forum.pyro.ai">forum.pyro.ai</a>!</p></li>
-</ul>
-<p><strong>Table of contents</strong></p>
-<ul class="simple">
-<li><p><a class="reference external" href="#Overview">Overview</a></p></li>
-<li><p><a class="reference external" href="#Mechanics-of-enumeration">Mechanics of enumeration</a></p>
-<ul>
-<li><p><a class="reference external" href="#Multiple-latent-variables">Multiple latent variables</a></p></li>
-<li><p><a class="reference external" href="#Examining-discrete-latent-states">Examining discrete latent states</a></p></li>
-<li><p><a class="reference external" href="#Indexing-with-enumerated-variables">Indexing with enumerated variables</a></p></li>
-</ul>
-</li>
-<li><p><a class="reference external" href="#Plates-and-enumeration">Plates and enumeration</a></p>
-<ul>
-<li><p><a class="reference external" href="#Dependencies-among-plates">Dependencies among plates</a></p></li>
-</ul>
-</li>
-<li><p><a class="reference external" href="#Time-series-example">Time series example</a></p>
-<ul>
-<li><p><a class="reference external" href="#How-to-enumerate-more-than-25-variables">How to enumerate more than 25 variables</a></p></li>
-</ul>
-</li>
 </ul>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
@@ -536,44 +515,54 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="section" id="Overview">
-<h2>Overview<a class="headerlink" href="#Overview" title="Permalink to this headline">¶</a></h2>
-<p>Pyro’s enumeration strategy encompasses popular algorithms including variable elimination, exact message passing, forward-filter-backward-sample, inside-out, Baum-Welch, and many other special-case algorithms. Aside from enumeration, Pyro implements a number of inference strategies including variational inference (<a class="reference external" href="http://docs.pyro.ai/en/dev/inference_algos.html">SVI</a>) and monte carlo (<a class="reference external" href="http://docs.pyro.ai/en/dev/mcmc.html#pyro.infer.mcmc.HMC">HMC</a> and
-<a class="reference external" href="http://docs.pyro.ai/en/dev/mcmc.html#pyro.infer.mcmc.NUTS">NUTS</a>). Enumeration can be used either as a stand-alone strategy via <a class="reference external" href="http://docs.pyro.ai/en/dev/inference_algos.html#pyro.infer.discrete.infer_discrete">infer_discrete</a>, or as a component of other strategies. Thus enumeration allows Pyro to marginalize out discrete latent variables in HMC and SVI models, and to use variational enumeration of discrete variables in SVI guides.</p>
+<div class="section" id="概览">
+<h2>概览<a class="headerlink" href="#概览" title="Permalink to this headline">¶</a></h2>
+<p>Pyro的枚举策略包含了许多流行算法 including variable elimination, exact message passing, forward-filter-backward-sample, inside-out, Baum-Welch, and many other special-case algorithms.</p>
+<p>除了枚举策略, Pyro实施了许多其他推理策略，包括 variational inference (<a class="reference external" href="http://docs.pyro.ai/en/dev/inference_algos.html">SVI</a>) and monte carlo (<a class="reference external" href="http://docs.pyro.ai/en/dev/mcmc.html#pyro.infer.mcmc.HMC">HMC</a> and <a class="reference external" href="http://docs.pyro.ai/en/dev/mcmc.html#pyro.infer.mcmc.NUTS">NUTS</a>).</p>
+<p>枚举策略既可以用作通过 <a class="reference external" href="http://docs.pyro.ai/en/dev/inference_algos.html#pyro.infer.discrete.infer_discrete">infer_discrete</a> 单独使用，也可以用作其他策略的组成部分。Thus enumeration allows Pyro to marginalize out discrete latent variables in HMC and SVI models, and to use variational enumeration of discrete variables in SVI guides.</p>
 </div>
 <div class="section" id="Mechanics-of-enumeration">
 <h2>Mechanics of enumeration<a class="headerlink" href="#Mechanics-of-enumeration" title="Permalink to this headline">¶</a></h2>
-<p>The core idea of enumeration is to interpret discrete <a class="reference external" href="http://docs.pyro.ai/en/dev/primitives.html#pyro.sample">pyro.sample</a> statements as full enumeration rather than random sampling. Other inference algorithms can then sum out the enumerated values. For example a sample statement might return a tensor of scalar shape under the standard “sample” interpretation (we’ll illustrate with trivial model and guide):</p>
+<p>枚举策略的核心思想是将不连续的 <a class="reference external" href="http://docs.pyro.ai/en/dev/primitives.html#pyro.sample">pyro.sample</a> 语句解释为完全枚举，而不是随机采样。 Other inference algorithms can then sum out the enumerated values. For example a sample statement might return a tensor of scalar shape under the standard “sample” interpretation (we’ll illustrate with trivial model and guide):</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="k">def</span> <span class="nf">model</span><span class="p">():</span>
-    <span class="n">z</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;z&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Categorical</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">5</span><span class="p">)))</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;z&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Categorical</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">6</span><span class="p">)))</span>
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;model z = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
 
 <span class="k">def</span> <span class="nf">guide</span><span class="p">():</span>
-    <span class="n">z</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;z&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Categorical</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">5</span><span class="p">)))</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;z&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Categorical</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">6</span><span class="p">)))</span>
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;guide z = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
 
 <span class="n">elbo</span> <span class="o">=</span> <span class="n">Trace_ELBO</span><span class="p">()</span>
-<span class="n">elbo</span><span class="o">.</span><span class="n">loss</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">guide</span><span class="p">);</span>
+<span class="n">elbo</span><span class="o">.</span><span class="n">loss</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">guide</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
+<div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-guide z = 4
-model z = 4
+guide z = 2
+model z = 2
 </pre></div></div>
 </div>
-<p>However under the enumeration interpretation, the same sample site will return a fully enumerated set of values, based on its distribution’s <a class="reference external" href="https://pytorch.org/docs/stable/distributions.html#torch.distributions.distribution.Distribution.enumerate_support">.enumerate_support()</a> method.</p>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+-0.0
+</pre></div></div>
+</div>
+<p>（实现并行枚举）However under the enumeration interpretation, the same sample site will return a fully enumerated set of values, based on its distribution’s <a class="reference external" href="https://pytorch.org/docs/stable/distributions.html#torch.distributions.distribution.Distribution.enumerate_support">.enumerate_support()</a> method.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -587,13 +576,14 @@ model z = 4
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-guide z = tensor([0, 1, 2, 3, 4])
-model z = tensor([0, 1, 2, 3, 4])
+guide z = tensor([0, 1, 2, 3, 4, 5])
+model z = tensor([0, 1, 2, 3, 4, 5])
 </pre></div></div>
 </div>
-<p>Note that we’ve used “parallel” enumeration to enumerate along a new tensor dimension. This is cheap and allows Pyro to parallelize computation, but requires downstream program structure to avoid branching on the value of <code class="docutils literal notranslate"><span class="pre">z</span></code>. To support dynamic program structure, you can instead use “sequential” enumeration, which runs the entire model,guide pair once per sample value, but requires running the model multiple times.</p>
+<p>Note that we’ve used “parallel” enumeration to enumerate along a new tensor dimension. This is cheap and allows Pyro to parallelize computation, but requires downstream program structure to avoid branching on the value of <code class="docutils literal notranslate"><span class="pre">z</span></code>.</p>
+<p>为了支持动态程序结构, 你也可以用 “sequential” enumeration, which runs the entire model,guide pair once per sample value, but requires running the model multiple times.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -607,6 +597,8 @@ model z = tensor([0, 1, 2, 3, 4])
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
+guide z = 5
+model z = 5
 guide z = 4
 model z = 4
 guide z = 3
@@ -619,20 +611,21 @@ guide z = 0
 model z = 0
 </pre></div></div>
 </div>
-<p>Parallel enumeration is cheaper but more complex than sequential enumeration, so we’ll focus the rest of this tutorial on the parallel variant. Note that both forms can be interleaved.</p>
-<div class="section" id="Multiple-latent-variables">
-<h3>Multiple latent variables<a class="headerlink" href="#Multiple-latent-variables" title="Permalink to this headline">¶</a></h3>
-<p>We just saw that a single discrete sample site can be enumerated via nonstandard interpretation. A model with a single discrete latent variable is a mixture model. Models with multiple discrete latent variables can be more complex, including HMMs, CRFs, DBNs, and other structured models. In models with multiple discrete latent variables, Pyro enumerates each variable in a different tensor dimension (counting from the right; see <a class="reference external" href="http://pyro.ai/examples/tensor_shapes.html">Tensor Shapes
-Tutorial</a>). This allows Pyro to determine the dependency graph among variables and then perform cheap exact inference using variable elimination algorithms.</p>
-<p>To understand enumeration dimension allocation, consider the following model, where here we collapse variables out of the model, rather than enumerate them in the guide.</p>
+<p>(我们后面专注并行枚举) Parallel enumeration is cheaper but more complex than sequential enumeration, so we’ll focus the rest of this tutorial on the parallel variant. Note that both forms can be interleaved.</p>
+<div class="section" id="多元潜变量">
+<h3>多元潜变量<a class="headerlink" href="#多元潜变量" title="Permalink to this headline">¶</a></h3>
+<p>我们刚刚看到 that a single discrete sample site can be enumerated via nonstandard interpretation. 具有单个离散潜变量的模型是混合模型，而具有多个离散潜在变量的模型更复杂, 比如 HMMs, CRFs, DBNs, 和其他结构模型。 In models with multiple discrete latent variables, Pyro enumerates each variable in a different tensor dimension (counting from the right; see <a class="reference external" href="http://pyro.ai/examples/tensor_shapes.html">Tensor Shapes Tutorial</a>). This allows Pyro to determine the dependency graph among variables and
+then perform cheap exact inference using variable elimination algorithms.</p>
+<p>(我们使用例子帮助理解) To understand enumeration dimension allocation, consider the following model, where here we collapse variables out of the model, rather than enumerate them in the guide.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="nd">@config_enumerate</span>
 <span class="k">def</span> <span class="nf">model</span><span class="p">():</span>
     <span class="n">p</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">exp</span><span class="p">(),</span> <span class="n">constraint</span><span class="o">=</span><span class="n">constraints</span><span class="o">.</span><span class="n">simplex</span><span class="p">)</span>
+    <span class="c1"># print(p)</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Categorical</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
     <span class="n">y</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Categorical</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="n">x</span><span class="p">]))</span>
     <span class="n">z</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;z&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Categorical</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="n">y</span><span class="p">]))</span>
@@ -663,13 +656,13 @@ model z.shape = torch.Size([3, 1, 1])
 </div>
 <div class="section" id="Examining-discrete-latent-states">
 <h3>Examining discrete latent states<a class="headerlink" href="#Examining-discrete-latent-states" title="Permalink to this headline">¶</a></h3>
-<p>While enumeration in SVI allows fast learning of parameters like <code class="docutils literal notranslate"><span class="pre">p</span></code> above, it does not give access to predicted values of the discrete latent variables like <code class="docutils literal notranslate"><span class="pre">x,y,z</span></code> above. We can access these using a standalone <a class="reference external" href="http://docs.pyro.ai/en/dev/inference_algos.html#pyro.infer.discrete.infer_discrete">infer_discrete</a> handler. In this case the guide was trivial, so we can simply wrap the model in <code class="docutils literal notranslate"><span class="pre">infer_discrete</span></code>. We need to pass a <code class="docutils literal notranslate"><span class="pre">first_available_dim</span></code> argument to tell <code class="docutils literal notranslate"><span class="pre">infer_discrete</span></code>
-which dimensions are available for enumeration; this is related to the <code class="docutils literal notranslate"><span class="pre">max_plate_nesting</span></code> arg of <code class="docutils literal notranslate"><span class="pre">TraceEnum_ELBO</span></code> via</p>
+<p>（而具有多个离散潜在变量的模型）While enumeration in SVI allows fast learning of parameters like <code class="docutils literal notranslate"><span class="pre">p</span></code> above, it does not give access to predicted values of the discrete latent variables like <code class="docutils literal notranslate"><span class="pre">x,y,z</span></code> above. We can access these using a standalone <a class="reference external" href="http://docs.pyro.ai/en/dev/inference_algos.html#pyro.infer.discrete.infer_discrete">infer_discrete</a> handler. In this case the guide was trivial, so we can simply wrap the model in <code class="docutils literal notranslate"><span class="pre">infer_discrete</span></code>. We need to pass a <code class="docutils literal notranslate"><span class="pre">first_available_dim</span></code>
+argument to tell <code class="docutils literal notranslate"><span class="pre">infer_discrete</span></code> which dimensions are available for enumeration; this is related to the <code class="docutils literal notranslate"><span class="pre">max_plate_nesting</span></code> arg of <code class="docutils literal notranslate"><span class="pre">TraceEnum_ELBO</span></code> via</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">first_available_dim</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">-</span> <span class="n">max_plate_nesting</span>
 </pre></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[42]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -693,14 +686,15 @@ model x.shape = torch.Size([])
 model y.shape = torch.Size([])
 model z.shape = torch.Size([])
 x = 0
-y = 2
-z = 1
+y = 0
+z = 0
 </pre></div></div>
 </div>
-<p>Notice that under the hood <code class="docutils literal notranslate"><span class="pre">infer_discrete</span></code> runs the model twice: first in forward-filter mode where sites are enumerated, then in replay-backward-sample model where sites are sampled. <code class="docutils literal notranslate"><span class="pre">infer_discrete</span></code> can also perform MAP inference by passing <code class="docutils literal notranslate"><span class="pre">temperature=0</span></code>. Note that while <code class="docutils literal notranslate"><span class="pre">infer_discrete</span></code> produces correct posterior samples, it does not currently produce correct logprobs, and should not be used in other gradient-based inference algorthms.</p>
+<p>（模型运行了两次，一次用于并行枚举，一次用于抽样）Notice that under the hood <code class="docutils literal notranslate"><span class="pre">infer_discrete</span></code> runs the model twice: first in forward-filter mode where sites are enumerated, then in replay-backward-sample model where sites are sampled.</p>
+<p>（用于MAP推断）<code class="docutils literal notranslate"><span class="pre">infer_discrete</span></code> can also perform MAP inference by passing <code class="docutils literal notranslate"><span class="pre">temperature=0</span></code>. Note that while <code class="docutils literal notranslate"><span class="pre">infer_discrete</span></code> produces correct posterior samples, it does not currently produce correct logprobs, and should not be used in other gradient-based inference algorthms.</p>
 </div>
-<div class="section" id="Indexing-with-enumerated-variables">
-<h3>Indexing with enumerated variables<a class="headerlink" href="#Indexing-with-enumerated-variables" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="枚举变量的索引">
+<h3>枚举变量的索引<a class="headerlink" href="#枚举变量的索引" title="Permalink to this headline">¶</a></h3>
 <p>It can be tricky to use <a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html">advanced indexing</a> to select an element of a tensor using one or more enumerated variables. For example, suppose a plated random variable <code class="docutils literal notranslate"><span class="pre">z</span></code> depends on two different random variables:</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">p</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">exp</span><span class="p">(),</span>
                <span class="n">constraint</span><span class="o">=</span><span class="n">constraints</span><span class="o">.</span><span class="n">simplex</span><span class="p">)</span>
@@ -726,7 +720,7 @@ z = 1
 </div>
 <p>Here is a complete example:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[43]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -770,10 +764,10 @@ p_xy.shape = torch.Size([3, 4, 5, 2])
 </div>
 <div class="section" id="Plates-and-enumeration">
 <h2>Plates and enumeration<a class="headerlink" href="#Plates-and-enumeration" title="Permalink to this headline">¶</a></h2>
-<p>Pyro <a class="reference external" href="http://docs.pyro.ai/en/dev/primitives.html#pyro.plate">plates</a> express conditional independence among random variables. Pyro’s enumeration strategy can take advantage of plates to reduce the high cost (exponential in the size of the plate) of enumerating a cartesian product down to a low cost (linear in the size of the plate) of enumerating conditionally independent random variables in lock-step. This is especially important for e.g. minibatched data.</p>
+<p>Pyro <a class="reference external" href="http://docs.pyro.ai/en/dev/primitives.html#pyro.plate">plates</a> 表示随机变量之间的条件独立性。 Pyro’s enumeration strategy 可借助 Pyro plates 来减少计算代价 (exponential in the size of the plate) of enumerating a cartesian product down to a low cost (linear in the size of the plate) of enumerating conditionally independent random variables in lock-step. This is especially important for e.g. minibatched data.</p>
 <p>To illustrate, consider a gaussian mixture model with shared variance and different mean.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[44]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -891,11 +885,11 @@ shape <code class="docutils literal notranslate"><span class="pre">(3,1)</span><
 </div>
 </div>
 </div>
-<div class="section" id="Time-series-example">
-<h2>Time series example<a class="headerlink" href="#Time-series-example" title="Permalink to this headline">¶</a></h2>
-<p>Consider a discrete HMM with latent states <span class="math notranslate nohighlight">\(x_t\)</span> and observations <span class="math notranslate nohighlight">\(y_t\)</span>. Suppose we want to learn the transition and emission probabilities.</p>
+<div class="section" id="时间序列示例">
+<h2>时间序列示例<a class="headerlink" href="#时间序列示例" title="Permalink to this headline">¶</a></h2>
+<p>考虑一个隐变量为 <span class="math notranslate nohighlight">\(x_t\)</span> 观测变量为 <span class="math notranslate nohighlight">\(y_t\)</span> 的 HMM 模型。 Suppose we want to learn the transition and emission probabilities.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[45]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -916,12 +910,14 @@ shape <code class="docutils literal notranslate"><span class="pre">(3,1)</span><
                         <span class="n">infer</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;enumerate&quot;</span><span class="p">:</span> <span class="s2">&quot;parallel&quot;</span><span class="p">})</span>
         <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;y_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t</span><span class="p">),</span> <span class="n">dist</span><span class="o">.</span><span class="n">Categorical</span><span class="p">(</span><span class="n">emission</span><span class="p">[</span><span class="n">x</span><span class="p">]),</span> <span class="n">obs</span><span class="o">=</span><span class="n">y</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;x_</span><span class="si">{}</span><span class="s2">.shape = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+
+<span class="c1"># FAQ transition 的维度是啥？</span>
 </pre></div>
 </div>
 </div>
 <p>We can learn the global parameters using SVI with an autoguide.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[46]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -973,7 +969,7 @@ each step of the loop depend only on variables outside of the loop and variables
 </pre></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[47]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1012,15 +1008,6 @@ x_9.shape = torch.Size([10, 1, 1])
 </pre></div></div>
 </div>
 <p>Notice that this model now only needs three tensor dimensions: one for the plate, one for even states, and one for odd states. For more complex examples, see the Dynamic Bayes Net model in the <a class="reference external" href="https://github.com/pyro-ppl/pyro/blob/dev/examples/hmm.py">HMM example</a>.</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>
-</pre></div>
-</div>
-</div>
 </div>
 </div>
 </div>

@@ -12,7 +12,7 @@ Pyro 是一个 Deep Universal Probabilistic Programming, 将会是我们 Causal 
 
 
 
-需要注意：在本教程中，我们混用了随机函数，函数，分布，随机变量这几个概念，他们都是 概率程序(probabilistic programs)的不同说法。
+需要注意：在本教程中，我们混用了随机函数，函数，分布，随机变量这几个概念，他们都是概率程序(probabilistic programs)的不同说法。
 
 Causal AI: https://sites.google.com/view/minituring/
 
