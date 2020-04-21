@@ -10,7 +10,11 @@ Welcome to Pyro Examples and Tutorials!
 
 Pyro 是一个 Deep Universal Probabilistic Programming, 将会是我们 Causal AI 的一个重要编程框架。这是一个 Pyro 教程的中文编译项目，我们的翻译一方面仅仅翻译部分内容使之尽量接近原来的官方教程，另外一方面会加入一些个人的总结的理解。
 
+相关资料包括：
 
+- `Pyro 官网 <https://pyro.ai>`_
+- `Pyro 全面介绍 <https://sites.google.com/view/causal-inference-zerotoall/codes/tools/pyro>`_
+- `Pyro 官方教程汉化版 <https://causalai.github.io/pyro_zh_tutorial/>`_
 
 需要注意：在本教程中，我们混用了随机函数，函数，分布，随机变量这几个概念，他们都是概率程序(probabilistic programs)的不同说法。
 

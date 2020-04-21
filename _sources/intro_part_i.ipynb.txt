@@ -401,6 +401,15 @@
     "Collapsed": "false"
    },
    "source": [
+    "**思考**：同样的问题是，如何查看和使用模型分布和指导分布的参数呢？如自定义目标函数呢？如何化解成最原始的梯度下降法？"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "Collapsed": "false"
+   },
+   "source": [
     "## 通用概率编程\n",
     "\n",
     "- Universality: Stochastic Recursion, Higher-order Stochastic Functions, and Random Control Flow\n",

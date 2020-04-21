@@ -695,6 +695,7 @@ cloudy {&#39;type&#39;: &#39;sample&#39;, &#39;name&#39;: &#39;cloudy&#39;, &#39
 temp {&#39;type&#39;: &#39;sample&#39;, &#39;name&#39;: &#39;temp&#39;, &#39;fn&#39;: Normal(loc: 75.0, scale: 15.0), &#39;is_observed&#39;: True, &#39;args&#39;: (), &#39;kwargs&#39;: {}, &#39;value&#39;: tensor(52), &#39;infer&#39;: {}, &#39;scale&#39;: 1.0, &#39;mask&#39;: None, &#39;cond_indep_stack&#39;: (), &#39;done&#39;: True, &#39;stop&#39;: False, &#39;continuation&#39;: None}
 </pre></div></div>
 </div>
+<p><strong>思考</strong>：同样的问题是，如何查看和使用模型分布和指导分布的参数呢？如自定义目标函数呢？如何化解成最原始的梯度下降法？</p>
 </div>
 <div class="section" id="通用概率编程">
 <h2>通用概率编程<a class="headerlink" href="#通用概率编程" title="Permalink to this headline">¶</a></h2>
@@ -808,7 +809,7 @@ tensor(-2.0794)
 </pre></div>
 </div>
 <div class="output_area docutils container">
-<img alt="_images/intro_part_i_28_0.svg" src="_images/intro_part_i_28_0.svg" /></div>
+<img alt="_images/intro_part_i_29_0.svg" src="_images/intro_part_i_29_0.svg" /></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:

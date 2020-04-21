@@ -108,7 +108,6 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#Amortization">Amortization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#参考文献">参考文献</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_iii.html">SVI Part III: ELBO 梯度估计</a></li>
@@ -259,13 +258,13 @@
 <blockquote>
 <div><p><strong>The Goal: Scaling SVI to Large Datasets</strong></p>
 </div></blockquote>
-<p>一般情况下 SVI 过程中每次更新的计算复杂度是正比于样本数，所以我们需要是用 mini-batch 的办法减少复杂度。For a model with <span class="math notranslate nohighlight">\(N\)</span> observations, running the <code class="docutils literal notranslate"><span class="pre">model</span></code> and <code class="docutils literal notranslate"><span class="pre">guide</span></code> and constructing the ELBO involves evaluating log pdf’s whose 计算复杂度随着样本数 <span class="math notranslate nohighlight">\(N\)</span> 比例增长. This is a problem if we want to scale to large datasets. 幸运的是，目标函数 ELBO naturally 支持子采样 provided that 我们的 model/guide 具有一些条件独立性结构 that we can take advantage of. 例如, in the case that the
-observations are conditionally independent given the latents, the log likelihood term in the ELBO can be approximated with</p>
+<p>一般情况下 SVI 过程中每次更新的计算复杂度是正比于样本数，所以我们需要是用 mini-batch 的办法减少复杂度。For a model with <span class="math notranslate nohighlight">\(N\)</span> observations, running the <code class="docutils literal notranslate"><span class="pre">model</span></code> and <code class="docutils literal notranslate"><span class="pre">guide</span></code> and constructing the ELBO involves evaluating log pdf’s whose 计算复杂度随着样本数 <span class="math notranslate nohighlight">\(N\)</span> 比例增长. This is a problem if we want to scale to large datasets. 幸运的是，目标函数 ELBO 天然的支持子采样 provided that 我们的 model/guide 具有一些我们可以利用的条件独立性结构. 例如, 在 observations 在给定潜变量下条件独立时,
+ELBO 目标函数 <span class="math notranslate nohighlight">\(\mathbb{E}_{q_{\phi}({\bf z})} \left [ \log p_{\theta}({\bf x}, {\bf z}) - \log q_{\phi}({\bf z}) \right]\)</span> 中的相应对数似然有如下近似：</p>
 <div class="math notranslate nohighlight">
 \[ E[\log p({\bf x}| {\bf z})] \approx \frac{1}{N}\sum_{i=1}^N \log p({\bf x}_i | {\bf z}) \approx  \frac{1}{M}
 \sum_{i\in{\mathcal{I}_M}} \log p({\bf x}_i | {\bf z})\]</div>
 <p>where <span class="math notranslate nohighlight">\(\mathcal{I}_M\)</span> is a mini-batch of indices of size <span class="math notranslate nohighlight">\(M\)</span> with <span class="math notranslate nohighlight">\(M&lt;N\)</span> (for a discussion please see references [1,2]). 很好，问题解决了！但是我们如何在Pyro中实现这一点？</p>
-<p>Hint for the blew section:</p>
+<p>完成本章学习之后，您将理解如下的程序：</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
     <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;obs_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
 
@@ -278,7 +277,8 @@ observations are conditionally independent given the latents, the log likelihood
 </div>
 <div class="section" id="Pyro-申明条件独立">
 <h2>Pyro 申明条件独立<a class="headerlink" href="#Pyro-申明条件独立" title="Permalink to this headline">¶</a></h2>
-<p>If a user wants to do this sort of thing in Pyro, 则首先需要确保 the model and guide are written in such a way that Pyro can leverage the relevant conditional independencies. Let’s see how this is done. Pyro 提供了两种用于标记条件独立性的原语(language primitive): <code class="docutils literal notranslate"><span class="pre">plate</span></code> and <code class="docutils literal notranslate"><span class="pre">markov</span></code>. 让我们从第一个原语开始。</p>
+<p>如果我们想要在 Pyro 中使用子采样, 则首先需要确保 <code class="docutils literal notranslate"><span class="pre">model</span></code> 和 <code class="docutils literal notranslate"><span class="pre">guide</span></code> 被写成了那种可以让 Pyro 利用相关条件独立性的形式。让我们看看这究竟是如何实现的。</p>
+<p>Pyro 提供了两种用于标记条件独立性的原语(language primitive): <code class="docutils literal notranslate"><span class="pre">plate</span></code> and <code class="docutils literal notranslate"><span class="pre">markov</span></code>. 让我们从第一个原语开始。</p>
 <blockquote>
 <div><p><code class="docutils literal notranslate"><span class="pre">Pyro.plate</span></code>: 从 Sequential <code class="docutils literal notranslate"><span class="pre">plate</span></code> 到 Vectorized <code class="docutils literal notranslate"><span class="pre">plate</span></code></p>
 </div></blockquote>
@@ -442,9 +442,9 @@ q({\bf z}, \beta) = q(\beta) \prod_{i=1}^N q({\bf z}_i | \beta, \lambda_i)\]</di
 \[q(\beta) \prod_{n=1}^N q({\bf z}_i | \beta, f({\bf x}_i))\]</div>
 <p>The function <span class="math notranslate nohighlight">\(f(\cdot)\)</span>— which basically maps a given observation to a set of variational parameters tailored to that datapoint— will need to be sufficiently rich to capture the posterior accurately, but now we can handle large datasets without having to introduce an obscene number of variational parameters. 这种方法也有其他好处： for example, during learning <span class="math notranslate nohighlight">\(f(\cdot)\)</span> effectively allows us to share statistical power among different datapoints. 这正是 <a class="reference internal" href="vae.html"><span class="doc">VAE</span></a>
 中使用的方法。</p>
-</div>
-<div class="section" id="参考文献">
-<h2>参考文献<a class="headerlink" href="#参考文献" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p>参考文献</p>
+</div></blockquote>
 <p>[1] <code class="docutils literal notranslate"><span class="pre">Stochastic</span> <span class="pre">Variational</span> <span class="pre">Inference</span></code>,      Matthew D. Hoffman, David M. Blei, Chong Wang, John Paisley</p>
 <p>[2] <code class="docutils literal notranslate"><span class="pre">Auto-Encoding</span> <span class="pre">Variational</span> <span class="pre">Bayes</span></code>,     Diederik P Kingma, Max Welling</p>
 </div>

@@ -242,6 +242,12 @@
 <h1>Welcome to Pyro Examples and Tutorials!<a class="headerlink" href="#welcome-to-pyro-examples-and-tutorials" title="Permalink to this headline">¶</a></h1>
 <p>— by Heyang Gong</p>
 <p>Pyro 是一个 Deep Universal Probabilistic Programming, 将会是我们 Causal AI 的一个重要编程框架。这是一个 Pyro 教程的中文编译项目，我们的翻译一方面仅仅翻译部分内容使之尽量接近原来的官方教程，另外一方面会加入一些个人的总结的理解。</p>
+<p>相关资料包括：</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://pyro.ai">Pyro 官网</a></p></li>
+<li><p><a class="reference external" href="https://sites.google.com/view/causal-inference-zerotoall/codes/tools/pyro">Pyro 全面介绍</a></p></li>
+<li><p><a class="reference external" href="https://causalai.github.io/pyro_zh_tutorial/">Pyro 官方教程汉化版</a></p></li>
+</ul>
 <p>需要注意：在本教程中，我们混用了随机函数，函数，分布，随机变量这几个概念，他们都是概率程序(probabilistic programs)的不同说法。</p>
 <p>Causal AI: <a class="reference external" href="https://sites.google.com/view/minituring/">https://sites.google.com/view/minituring/</a></p>
 <div class="toctree-wrapper compound">
@@ -260,32 +266,32 @@
 <li class="toctree-l2"><a class="reference internal" href="intro_part_ii.html#用指导分布近似后验">用指导分布近似后验</a></li>
 <li class="toctree-l2"><a class="reference internal" href="intro_part_ii.html#参数化模型和变分推断">参数化模型和变分推断</a></li>
 <li class="toctree-l2"><a class="reference internal" href="intro_part_ii.html#例子完整代码">例子完整代码</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro_part_ii.html#拆解成梯度下降法">拆解成梯度下降法</a></li>
 <li class="toctree-l2"><a class="reference internal" href="intro_part_ii.html#下一步？">下一步？</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_i.html">SVI Part I: 随机变分推断基础</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="svi_part_i.html#随机变分推断数学背景">随机变分推断数学背景</a></li>
+<li class="toctree-l2"><a class="reference internal" href="svi_part_i.html#数学基础">数学基础</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_i.html#近似后验的guide">近似后验的guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_i.html#目标函数ELBO">目标函数ELBO</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_i.html#SVI-类"><code class="docutils literal notranslate"><span class="pre">SVI</span></code> 类</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_i.html#optimizers">optimizers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_i.html#端对端例子">端对端例子</a></li>
-<li class="toctree-l2"><a class="reference internal" href="svi_part_i.html#参考文献">参考文献</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_ii.html">SVI Part II: 条件独立, 子采样和 Amortization</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_ii.html#Pyro-申明条件独立">Pyro 申明条件独立</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_ii.html#子采样">子采样</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_ii.html#Amortization">Amortization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="svi_part_ii.html#参考文献">参考文献</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_iii.html">SVI Part III: ELBO 梯度估计</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_iii.html#数学背景">数学背景</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_iii.html#简单情况:-可重参数化">简单情况: 可重参数化</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_iii.html#Tricky-case:-不可重参数化">Tricky case: 不可重参数化</a></li>
-<li class="toctree-l2"><a class="reference internal" href="svi_part_iii.html#缓解方差问题策略">缓解方差问题策略</a></li>
-<li class="toctree-l2"><a class="reference internal" href="svi_part_iii.html#参考文献">参考文献</a></li>
+<li class="toctree-l2"><a class="reference internal" href="svi_part_iii.html#Reducing-Variance-via-Dependency-Structure">Reducing Variance via Dependency Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="svi_part_iii.html#Reducing-Variance-with-Data-Dependent-Baselines">Reducing Variance with Data-Dependent Baselines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="svi_part_iii.html#端对端-Baseline-例子">端对端 Baseline 例子</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tensor_shapes.html">Pyro中随机函数的维度</a><ul>

@@ -95,13 +95,12 @@
 <li class="toctree-l1"><a class="reference internal" href="intro_part_i.html">Pyro 模型介绍</a></li>
 <li class="toctree-l1"><a class="reference internal" href="intro_part_ii.html">Pyro 推断简介</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">SVI Part I: 随机变分推断基础</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#随机变分推断数学背景">随机变分推断数学背景</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#数学基础">数学基础</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#近似后验的guide">近似后验的guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#目标函数ELBO">目标函数ELBO</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#SVI-类"><code class="docutils literal notranslate"><span class="pre">SVI</span></code> 类</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#optimizers">optimizers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#端对端例子">端对端例子</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#参考文献">参考文献</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_ii.html">SVI Part II: 条件独立, 子采样和 Amortization</a></li>
@@ -479,7 +478,7 @@ div.rendered_html tbody tr:hover {
 <li><p><a class="reference external" href="#端对端例子">端对端例子</a></p></li>
 </ul>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -499,25 +498,24 @@ div.rendered_html tbody tr:hover {
 <span class="n">data</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">)])</span>
 <span class="n">data</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)])</span>
 
-<span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="n">data</span><span class="p">):</span> <span class="c1"># 参数的先验分布是 Beta(10, 10)</span>
     <span class="n">alpha0</span><span class="p">,</span> <span class="n">beta0</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">10.0</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">10.0</span><span class="p">)</span>
     <span class="n">theta</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;latent_fairness&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Beta</span><span class="p">(</span><span class="n">alpha0</span><span class="p">,</span> <span class="n">beta0</span><span class="p">))</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
         <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;obs_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">guide</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">guide</span><span class="p">(</span><span class="n">data</span><span class="p">):</span> <span class="c1"># 参数后验分布的 guide 是 Beta(p, q), p, q 初始值为 15.0， 15.0</span>
     <span class="n">alpha_q</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;alpha_q&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">15.0</span><span class="p">),</span> <span class="n">constraint</span><span class="o">=</span><span class="n">constraints</span><span class="o">.</span><span class="n">positive</span><span class="p">)</span>
     <span class="n">beta_q</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;beta_q&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">15.0</span><span class="p">),</span> <span class="n">constraint</span><span class="o">=</span><span class="n">constraints</span><span class="o">.</span><span class="n">positive</span><span class="p">)</span>
     <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;latent_fairness&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Beta</span><span class="p">(</span><span class="n">alpha_q</span><span class="p">,</span> <span class="n">beta_q</span><span class="p">))</span>
 
 <span class="n">adam_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">0.0005</span><span class="p">,</span> <span class="s2">&quot;betas&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.90</span><span class="p">,</span> <span class="mf">0.999</span><span class="p">)}</span>
 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">Adam</span><span class="p">(</span><span class="n">adam_params</span><span class="p">)</span>
-
-<span class="n">svi</span> <span class="o">=</span> <span class="n">SVI</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">guide</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="o">=</span><span class="n">Trace_ELBO</span><span class="p">())</span>
+<span class="n">svi</span> <span class="o">=</span> <span class="n">SVI</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">guide</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="o">=</span><span class="n">Trace_ELBO</span><span class="p">())</span> <span class="c1"># 目标函数和优化方法</span>
 
 <span class="n">n_steps</span> <span class="o">=</span> <span class="mi">2000</span>
 <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_steps</span><span class="p">):</span>
     <span class="n">svi</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">step</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">step</span> <span class="o">%</span> <span class="mi">50</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
 
 <span class="n">alpha_q</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">param</span><span class="p">(</span><span class="s2">&quot;alpha_q&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
@@ -535,12 +533,12 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-....................
-based on the data and our prior belief, the fairness of the coin is 0.535 +- 0.090
+........................................
+based on the data and our prior belief, the fairness of the coin is 0.537 +- 0.090
 </pre></div></div>
 </div>
-<div class="section" id="随机变分推断数学背景">
-<h2>随机变分推断数学背景<a class="headerlink" href="#随机变分推断数学背景" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="数学基础">
+<h2>数学基础<a class="headerlink" href="#数学基础" title="Permalink to this headline">¶</a></h2>
 <p>我们将假设我们已经在Pyro中定义了模型（有关如何完成此操作的更多详细信息，请参见 <a class="reference internal" href="intro_part_i.html"><span class="doc">Intro Part I</span></a>）。简单回顾一下，模型就是一个带参数的随机函数 <code class="docutils literal notranslate"><span class="pre">model(*args,</span> <span class="pre">**kwargs)</span></code>. 模型的每个部分都对应于某个 Pyro 语句:</p>
 <ol class="arabic simple">
 <li><p>观测变量 <span class="math notranslate nohighlight">\(\Longleftrightarrow\)</span> <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> with the <code class="docutils literal notranslate"><span class="pre">obs</span></code> argument</p></li>
@@ -565,7 +563,7 @@ based on the data and our prior belief, the fairness of the coin is 0.535 +- 0.0
 <p>其中对数证据 <span class="math notranslate nohighlight">\(\log p_{\theta}({\bf x})\)</span> 满足：</p>
 <div class="math notranslate nohighlight">
 \[\log p_{\theta}({\bf x}) = \log \int_{\bf z}\! \; p_{\theta}({\bf x}, {\bf z}) d{\bf z}\]</div>
-<p>在一般情况下，这是一个 doubly difficult problem. 这是因为(even for a fixed <span class="math notranslate nohighlight">\(\theta\)</span>) 对潜变量 <span class="math notranslate nohighlight">\(\bf z\)</span> 上的积分通常难以计算的。此外，即使我们知道如何计算所有 <span class="math notranslate nohighlight">\(\theta\)</span> 值的对数证据，也就是说对数证据是一个以参数 <span class="math notranslate nohighlight">\(\theta\)</span> 为自变量的函数，最大化它通常将是一个困难的非凸优化问题。</p>
+<p>在一般情况下，这是一个双重困难问题. 第一个困难是因为(even for a fixed <span class="math notranslate nohighlight">\(\theta\)</span>) 对潜变量 <span class="math notranslate nohighlight">\(\bf z\)</span> 上的积分通常难以计算的。第二个困难是，即使我们知道如何计算所有 <span class="math notranslate nohighlight">\(\theta\)</span> 值的对数证据，也就是说对数证据是一个以参数 <span class="math notranslate nohighlight">\(\theta\)</span> 为自变量的函数，最大化它通常将是一个困难的非凸优化问题。</p>
 <p>除了找到 <span class="math notranslate nohighlight">\(\theta_{\rm{max}}\)</span> 之外，我们还要计算潜变量 <span class="math notranslate nohighlight">\(\bf z\)</span> 的后验分布：</p>
 <div class="math notranslate nohighlight">
 \[ p_{\theta_{\rm{max}}}({\bf z} | {\bf x}) = \frac{p_{\theta_{\rm{max}}}({\bf x} , {\bf z})}{
@@ -605,7 +603,7 @@ based on the data and our prior belief, the fairness of the coin is 0.535 +- 0.0
 <p>根据假设我们可以计算上式中期望内部对数概率 (也就是 <span class="math notranslate nohighlight">\(\log p_{\theta}({\bf x}, {\bf z})\)</span> 和 <span class="math notranslate nohighlight">\(\log q_{\phi}({\bf z})\)</span>). 因为指导分布是一个可以从中采样的参数分布, 所以我们可以计算 ELBO 的蒙特卡洛估计. 至关重要的是 ELBO 为对数证据的下限，即对于所有的 <span class="math notranslate nohighlight">\(\theta\)</span> 和 <span class="math notranslate nohighlight">\(\phi\)</span>，我们都有</p>
 <div class="math notranslate nohighlight">
 \[\log p_{\theta}({\bf x}) \ge {\rm ELBO}\]</div>
-<p>因此，如果我们采取(stochastic) gradient steps 最大化 ELBO，那么我们也会 pushing the log evidence higher (in expectation). 此外，可以证明ELBO 和对数证据之间的差就是 <code class="docutils literal notranslate"><span class="pre">guide</span></code> 和潜变量后验分布之间的KL散度：</p>
+<p>因此，如果我们采取随机梯度更新来最大化 ELBO，那么我们也会 pushing the log evidence higher (in expectation). 此外，可以证明ELBO 和对数证据之间的差就是 <code class="docutils literal notranslate"><span class="pre">guide</span></code> 和潜变量后验分布之间的KL散度：</p>
 <div class="math notranslate nohighlight">
 \[ \log p_{\theta}({\bf x}) - {\rm ELBO} =
 \rm{KL}\!\left( q_{\phi}({\bf z}) \lVert p_{\theta}({\bf z} | {\bf x}) \right)\]</div>
@@ -831,9 +829,9 @@ based on the data and our prior belief, the fairness of the coin is 0.535 +- 0.0
 </pre></div></div>
 </div>
 <p>(可以看出结果接近精确后验推断的值) This estimate is to be compared to the exact posterior mean, which in this case is given by <span class="math notranslate nohighlight">\(16/30 = 0.5\bar{3}\)</span>. Note that the final estimate of the fairness of the coin is in between the the fairness preferred by the prior (namely <span class="math notranslate nohighlight">\(0.50\)</span>) and the fairness suggested by the raw empirical frequencies (<span class="math notranslate nohighlight">\(6/10 = 0.60\)</span>).</p>
-</div>
-<div class="section" id="参考文献">
-<h2>参考文献<a class="headerlink" href="#参考文献" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p>参考文献</p>
+</div></blockquote>
 <p>[1] <code class="docutils literal notranslate"><span class="pre">Automated</span> <span class="pre">Variational</span> <span class="pre">Inference</span> <span class="pre">in</span> <span class="pre">Probabilistic</span> <span class="pre">Programming</span></code>,      David Wingate, Theo Weber</p>
 <p>[2] <code class="docutils literal notranslate"><span class="pre">Black</span> <span class="pre">Box</span> <span class="pre">Variational</span> <span class="pre">Inference</span></code>,     Rajesh Ranganath, Sean Gerrish, David M. Blei</p>
 <p>[3] <code class="docutils literal notranslate"><span class="pre">Auto-Encoding</span> <span class="pre">Variational</span> <span class="pre">Bayes</span></code>,     Diederik P Kingma, Max Welling</p>
