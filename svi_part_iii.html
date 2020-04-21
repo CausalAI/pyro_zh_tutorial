@@ -129,7 +129,7 @@
 <li class="toctree-l1"><a class="reference internal" href="vae.html">变分自编码器</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bayesian_regression.html">贝叶斯回归-介绍(Part 1)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bayesian_regression_ii.html">贝叶斯回归-推断算法(Part 2)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dmm.html">深马尔可夫模型</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dmm.html">深度马尔可夫模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="air.html">Attend Infer Repeat</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ss-vae.html">半监督 VAE</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stable.html">随机波动率的 Levy 稳定分布模型</a></li>
@@ -478,7 +478,7 @@ div.rendered_html tbody tr:hover {
 <h1>SVI Part III: ELBO 梯度估计<a class="headerlink" href="#SVI-Part-III:-ELBO-梯度估计" title="Permalink to this headline">¶</a></h1>
 <p>本文讲解 SVI 的 ELBO 优化理论，如何得到 ELBO Gradient Estimators。</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -495,8 +495,7 @@ div.rendered_html tbody tr:hover {
 <span class="k">class</span> <span class="nc">BernoulliBetaExample</span><span class="p">:</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_steps</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span> <span class="o">=</span> <span class="n">max_steps</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">alpha0</span> <span class="o">=</span> <span class="mf">10.0</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">beta0</span> <span class="o">=</span> <span class="mf">10.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta0</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">10.0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
@@ -552,13 +551,13 @@ div.rendered_html tbody tr:hover {
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 随机变分推断 with use_decaying_avg_baseline=True
-.....
-Did 424 steps of inference.
-两个变分参数的最终 absolute errors were 0.4239 &amp; 0.4997
+....
+Did 357 steps of inference.
+两个变分参数的最终 absolute errors were 0.4991 &amp; 0.4441
 随机变分推断 with use_decaying_avg_baseline=False
-..............
-Did 1332 steps of inference.
-两个变分参数的最终 absolute errors were 0.4987 &amp; 0.3563
+..........
+Did 993 steps of inference.
+两个变分参数的最终 absolute errors were 0.4992 &amp; 0.4671
 </pre></div></div>
 </div>
 <div class="section" id="数学背景">
@@ -580,7 +579,6 @@ Did 1332 steps of inference.
 f_{\phi}({\bf z}) \right]\]</div>
 <p>让我们从最简单的情况开始。</p>
 </div>
-<hr class="docutils" />
 <div class="section" id="简单情况:-可重参数化">
 <h2>简单情况: 可重参数化<a class="headerlink" href="#简单情况:-可重参数化" title="Permalink to this headline">¶</a></h2>
 <p>假如我们可以进行重参数化：</p>
@@ -603,6 +601,7 @@ f_{\phi}({\bf z}) \right]=
 = \mathbb{E}_{q_{\phi}({\bf z})} \left [
 \nabla_{\phi} ({\rm surrogate \; objective}) \right]\end{split}\]</div>
 </div>
+<hr class="docutils" />
 <div class="section" id="Tricky-case:-不可重参数化">
 <h2>Tricky case: 不可重参数化<a class="headerlink" href="#Tricky-case:-不可重参数化" title="Permalink to this headline">¶</a></h2>
 <p>如果我们不能进行上述重新参数化怎么办？不幸的是，许多感兴趣的分布（例如所有离散分布）都是这种情况。在这种情况下，我们的估算器采取一种更复杂的形式.</p>
@@ -623,7 +622,6 @@ q_{\phi}({\bf z})\nabla_{\phi} \log q_{\phi}({\bf z})\]</div>
 \[\mathbb{E}_{q_{\phi}({\bf z})} \left [
 (\nabla_{\phi} \log q_{\phi}({\bf z})) f_{\phi}({\bf z}) + \nabla_{\phi} f_{\phi}({\bf z})\right]\]</div>
 <p>This form of the gradient—variously known as the REINFORCE estimator or the score function estimator or the likelihood ratio estimator—适用于简单的蒙特卡洛估计。</p>
-<hr class="docutils" />
 <p>注意，一种方便实现的打包该结果的方式是引入一个替代目标函数：</p>
 <div class="math notranslate nohighlight">
 \[{\rm surrogate \;objective} \equiv
@@ -678,7 +676,7 @@ q_{\phi}({\bf z})\nabla_{\phi} \log q_{\phi}({\bf z})\]</div>
 <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;obs&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">locs</span><span class="p">[</span><span class="n">ks</span><span class="p">],</span> <span class="n">scale</span><span class="p">)</span><span class="o">.</span><span class="n">to_event</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>由于用户没有注意在模型中标记任何条件独立性, the gradient estimator constructed by Pyro’s <code class="docutils literal notranslate"><span class="pre">SVI</span></code> class is unable to take advantage of Rao-Blackwellization, 造成的结果是梯度的估计方差很大。 为了解决这个问题，用户需要明确标记条件独立性。Happily, this is not much work:</p>
+<p>由于用户没有注意在模型中标记任何条件独立性, the gradient estimator constructed by Pyro’s <code class="docutils literal notranslate"><span class="pre">SVI</span></code> class is unable to take advantage of Rao-Blackwellization, 造成的结果是梯度的估计方差很大。 为了解决这个问题，用户需要明确标记条件独立性，高兴的是这很容易做到：</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># mark conditional independence</span>
 <span class="c1"># (assumed to be along the rightmost tensor dimension)</span>
 <span class="k">with</span> <span class="n">pyro</span><span class="o">.</span><span class="n">plate</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)):</span>
@@ -719,7 +717,7 @@ Pyro包含用于将事物声明为独立的构造, 包括 <code class="docutils 
 <p>现在我们已经了解 Reducing Variance with Data-Dependent Baselines 的相关理论，接下来我们看看具体如何构造和使用 Pyro baselines.</p>
 <div class="section" id="Baselines-in-Pyro">
 <h3>Baselines in Pyro<a class="headerlink" href="#Baselines-in-Pyro" title="Permalink to this headline">¶</a></h3>
-<p>用户可以通过多种方式 instruct Pyro to use baselines in the context of stochastic variational inference. Since baselines can be attached to any non-reparameterizable random variable, the current baseline interface is at the level of the <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> statement. In particular the baseline interface makes use of an argument <code class="docutils literal notranslate"><span class="pre">baseline</span></code>, which is a dictionary that specifies baseline options. 请注意，仅在 <code class="docutils literal notranslate"><span class="pre">guide</span></code> 中（而不是在 <code class="docutils literal notranslate"><span class="pre">model</span></code> 中）specify baselines for sample statements 是有意义的。</p>
+<p>用户可以通过多种方式在随机变分推断中指导 Pyro 使用基线(baselines). Since baselines can be attached to any non-reparameterizable random variable, the current baseline interface is at the level of the <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> statement. In particular the baseline interface makes use of an argument <code class="docutils literal notranslate"><span class="pre">baseline</span></code>, which is a dictionary that specifies baseline options. 请注意，仅在 <code class="docutils literal notranslate"><span class="pre">guide</span></code> 中（而不是在 <code class="docutils literal notranslate"><span class="pre">model</span></code> 中）specify baselines for sample statements 是有意义的。</p>
 </div>
 <div class="section" id="Decaying-Average-Baseline">
 <h3>Decaying Average Baseline<a class="headerlink" href="#Decaying-Average-Baseline" title="Permalink to this headline">¶</a></h3>
@@ -733,7 +731,7 @@ Pyro包含用于将事物声明为独立的构造, 包括 <code class="docutils 
 <div class="section" id="Neural-Baselines">
 <h3>Neural Baselines<a class="headerlink" href="#Neural-Baselines" title="Permalink to this headline">¶</a></h3>
 <p>在某些情况下，decaying average baseline 效果很好。在其他情况下，using a baseline that depends on upstream randomness is crucial for getting good variance reduction. 构造这样的 baseline 的一种有效的方法是使用神经网络 that can be adapted during the course of learning. Pyro提供了两种specify such a baseline 的方法(for an extended example see the <a class="reference internal" href="air.html"><span class="doc">AIR tutorial</span></a>).</p>
-<p>First the user needs to decide what inputs the baseline is going to consume (e.g. the current datapoint under consideration or the previously sampled random variable). Then the user needs to construct a <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> that encapsulates the baseline computation. This might look something like</p>
+<p>首先用户需要确定基线的输入(e.g. the current datapoint under consideration or the previously sampled random variable). 然后用户需要构建一个 <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> that encapsulates the baseline computation. This might look something like</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">BaselineNN</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim_input</span><span class="p">,</span> <span class="n">dim_hidden</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
@@ -788,7 +786,7 @@ estimator is of the score function type). 在此过程中，我们还使用 <cod
 <p>We initialize the guide at a specified set of variational parameters. We then do SVI until the variational parameters have gotten to within a fixed tolerance of the parameters of the exact posterior. We do this both with and without the decaying average baseline.然后，我们比较两种情况下所需的梯度步数。下面是完整的代码：</p>
 <p>(<em>Since apart from the use of</em> <code class="docutils literal notranslate"><span class="pre">plate</span></code> <em>and</em> <code class="docutils literal notranslate"><span class="pre">use_decaying_avg_baseline</span></code>, <em>this code is very similar to the code in parts I and II of the SVI tutorial, we’re not going to go through the code line by line.</em> )</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -884,7 +882,7 @@ estimator is of the score function type). 在此过程中，我们还使用 <cod
 
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Did </span><span class="si">%d</span><span class="s2"> steps of inference.&quot;</span> <span class="o">%</span> <span class="n">k</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">((</span><span class="s2">&quot;Final absolute errors for the two variational parameters &quot;</span> <span class="o">+</span>
-               <span class="s2">&quot;were </span><span class="si">%.4f</span><span class="s2"> &amp; </span><span class="si">%.4f</span><span class="s2">&quot;</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="n">alpha_error</span><span class="p">,</span> <span class="n">beta_error</span><span class="p">))</span>
+               <span class="s2">&quot;were </span><span class="si">%.4f</span><span class="s2"> &amp; </span><span class="si">%.4f</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="n">alpha_error</span><span class="p">,</span> <span class="n">beta_error</span><span class="p">))</span>
 
 <span class="c1"># do the experiment</span>
 <span class="n">bbe</span> <span class="o">=</span> <span class="n">BernoulliBetaExample</span><span class="p">(</span><span class="n">max_steps</span><span class="o">=</span><span class="n">max_steps</span><span class="p">)</span>
@@ -899,16 +897,18 @@ estimator is of the score function type). 在此过程中，我们还使用 <cod
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 Doing inference with use_decaying_avg_baseline=True
-.
-Did 84 steps of inference.
-Final absolute errors for the two variational parameters were 0.7989 &amp; 0.7734
-Doing inference with use_decaying_avg_baseline=False
 ..
-Did 194 steps of inference.
-Final absolute errors for the two variational parameters were 0.7989 &amp; 0.7394
+Did 126 steps of inference.
+Final absolute errors for the two variational parameters were 0.7995 &amp; 0.7301
+
+Doing inference with use_decaying_avg_baseline=False
+....
+Did 382 steps of inference.
+Final absolute errors for the two variational parameters were 0.7998 &amp; 0.7558
+
 </pre></div></div>
 </div>
-<p><strong>Sample output:</strong></p>
+<p><strong>输出样例:</strong></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Doing</span> <span class="n">inference</span> <span class="k">with</span> <span class="n">use_decaying_avg_baseline</span><span class="o">=</span><span class="kc">True</span>
 <span class="o">....................</span>
 <span class="n">Did</span> <span class="mi">1932</span> <span class="n">steps</span> <span class="n">of</span> <span class="n">inference</span><span class="o">.</span>

@@ -114,12 +114,11 @@
 <li class="toctree-l2"><a class="reference internal" href="#VAE-in-Pyro">VAE in Pyro</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Inference">Inference</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Code-and-Sample-results">Code and Sample results</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#参考文献">参考文献</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="bayesian_regression.html">贝叶斯回归-介绍(Part 1)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bayesian_regression_ii.html">贝叶斯回归-推断算法(Part 2)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dmm.html">深马尔可夫模型</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dmm.html">深度马尔可夫模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="air.html">Attend Infer Repeat</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ss-vae.html">半监督 VAE</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stable.html">随机波动率的 Levy 稳定分布模型</a></li>
@@ -466,53 +465,220 @@ div.rendered_html tbody tr:hover {
 </style>
 <div class="section" id="变分自编码器">
 <h1>变分自编码器<a class="headerlink" href="#变分自编码器" title="Permalink to this headline">¶</a></h1>
+<p>Variatational Autoencoder(VAE)</p>
+<p>++++ 学完本教程，您将理解如下代码(See the full code on <a class="reference external" href="https://github.com/pyro-ppl/pyro/blob/dev/examples/vae/vae.py">Github</a>.)：</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">torch</span><span class="o">,</span> <span class="nn">pyro</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">torchvision.datasets</span> <span class="k">as</span> <span class="nn">dset</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+<span class="kn">import</span> <span class="nn">torchvision.transforms</span> <span class="k">as</span> <span class="nn">transforms</span>
+<span class="kn">import</span> <span class="nn">pyro.distributions</span> <span class="k">as</span> <span class="nn">dist</span>
+<span class="kn">import</span> <span class="nn">pyro.contrib.examples.util</span>  <span class="c1"># patches torchvision</span>
+<span class="kn">from</span> <span class="nn">pyro.infer</span> <span class="k">import</span> <span class="n">SVI</span><span class="p">,</span> <span class="n">Trace_ELBO</span>
+<span class="kn">from</span> <span class="nn">pyro.optim</span> <span class="k">import</span> <span class="n">Adam</span>
+<span class="k">assert</span> <span class="n">pyro</span><span class="o">.</span><span class="n">__version__</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;1.3.0&#39;</span><span class="p">)</span>
+<span class="n">pyro</span><span class="o">.</span><span class="n">enable_validation</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">pyro</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">enable_validation</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">pyro</span><span class="o">.</span><span class="n">set_rng_seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Decoder</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span> <span class="c1"># 用于构建模型分布的 decoder</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">z_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc21</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="mi">784</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softplus</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigmoid</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sigmoid</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">):</span>
+        <span class="n">hidden</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fc1</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
+        <span class="n">loc_img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fc21</span><span class="p">(</span><span class="n">hidden</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">loc_img</span>
+
+<span class="k">class</span> <span class="nc">Encoder</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span> <span class="c1"># 用于构建指导分布的 encoder</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">784</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc21</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">z_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc22</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">z_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softplus</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">784</span><span class="p">)</span>
+        <span class="n">hidden</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fc1</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="n">z_loc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc21</span><span class="p">(</span><span class="n">hidden</span><span class="p">)</span>
+        <span class="n">z_scale</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fc22</span><span class="p">(</span><span class="n">hidden</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">z_loc</span><span class="p">,</span> <span class="n">z_scale</span>
+
+<span class="k">class</span> <span class="nc">VAE</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z_dim</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">use_cuda</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">Encoder</span><span class="p">(</span><span class="n">z_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">Decoder</span><span class="p">(</span><span class="n">z_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">use_cuda</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_cuda</span> <span class="o">=</span> <span class="n">use_cuda</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z_dim</span> <span class="o">=</span> <span class="n">z_dim</span>
+
+    <span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span> <span class="c1"># 模型分布  p(x|z)p(z)</span>
+        <span class="n">pyro</span><span class="o">.</span><span class="n">module</span><span class="p">(</span><span class="s2">&quot;decoder&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">pyro</span><span class="o">.</span><span class="n">plate</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="n">z_loc</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">new_zeros</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">((</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">z_dim</span><span class="p">)))</span>
+            <span class="n">z_scale</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">new_ones</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">((</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">z_dim</span><span class="p">)))</span>
+            <span class="n">z</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;latent&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">z_loc</span><span class="p">,</span> <span class="n">z_scale</span><span class="p">)</span><span class="o">.</span><span class="n">to_event</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">loc_img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+            <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;obs&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">(</span><span class="n">loc_img</span><span class="p">)</span><span class="o">.</span><span class="n">to_event</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">784</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">guide</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span> <span class="c1"># 指导分布 q(z|x)</span>
+        <span class="n">pyro</span><span class="o">.</span><span class="n">module</span><span class="p">(</span><span class="s2">&quot;encoder&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">pyro</span><span class="o">.</span><span class="n">plate</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="n">z_loc</span><span class="p">,</span> <span class="n">z_scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;latent&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">z_loc</span><span class="p">,</span> <span class="n">z_scale</span><span class="p">)</span><span class="o">.</span><span class="n">to_event</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">reconstruct_img</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">z_loc</span><span class="p">,</span> <span class="n">z_scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">z_loc</span><span class="p">,</span> <span class="n">z_scale</span><span class="p">)</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
+        <span class="n">loc_img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="c1"># 注意在图像空间中我们没有抽样</span>
+        <span class="k">return</span> <span class="n">loc_img</span>
+
+<span class="k">def</span> <span class="nf">setup_data_loaders</span><span class="p">(</span><span class="n">batch_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">use_cuda</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">root</span> <span class="o">=</span> <span class="s1">&#39;./data&#39;</span>
+    <span class="n">download</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">trans</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">()</span>
+    <span class="n">train_set</span> <span class="o">=</span> <span class="n">dset</span><span class="o">.</span><span class="n">MNIST</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">trans</span><span class="p">,</span>
+                           <span class="n">download</span><span class="o">=</span><span class="n">download</span><span class="p">)</span>
+    <span class="n">test_set</span> <span class="o">=</span> <span class="n">dset</span><span class="o">.</span><span class="n">MNIST</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">trans</span><span class="p">)</span>
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;num_workers&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;pin_memory&#39;</span><span class="p">:</span> <span class="n">use_cuda</span><span class="p">}</span>
+    <span class="n">train_loader</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">train_set</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">test_loader</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">test_set</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loader</span>
+
+<span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="n">svi</span><span class="p">,</span> <span class="n">train_loader</span><span class="p">,</span> <span class="n">use_cuda</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">epoch_loss</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">train_loader</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">use_cuda</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+        <span class="n">epoch_loss</span> <span class="o">+=</span> <span class="n">svi</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">normalizer_train</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_loader</span><span class="o">.</span><span class="n">dataset</span><span class="p">)</span>
+    <span class="n">total_epoch_loss_train</span> <span class="o">=</span> <span class="n">epoch_loss</span> <span class="o">/</span> <span class="n">normalizer_train</span>
+    <span class="k">return</span> <span class="n">total_epoch_loss_train</span>
+
+<span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="n">svi</span><span class="p">,</span> <span class="n">test_loader</span><span class="p">,</span> <span class="n">use_cuda</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">test_loss</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">test_loader</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">use_cuda</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+        <span class="n">test_loss</span> <span class="o">+=</span> <span class="n">svi</span><span class="o">.</span><span class="n">evaluate_loss</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">normalizer_test</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">test_loader</span><span class="o">.</span><span class="n">dataset</span><span class="p">)</span>
+    <span class="n">total_epoch_loss_test</span> <span class="o">=</span> <span class="n">test_loss</span> <span class="o">/</span> <span class="n">normalizer_test</span>
+    <span class="k">return</span> <span class="n">total_epoch_loss_test</span>
+
+<span class="c1"># 模型训练</span>
+<span class="n">LEARNING_RATE</span> <span class="o">=</span> <span class="mf">1.0e-3</span>
+<span class="n">USE_CUDA</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">NUM_EPOCHS</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">TEST_FREQUENCY</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">train_loader</span><span class="p">,</span> <span class="n">test_loader</span> <span class="o">=</span> <span class="n">setup_data_loaders</span><span class="p">(</span><span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">use_cuda</span><span class="o">=</span><span class="n">USE_CUDA</span><span class="p">)</span>
+<span class="n">pyro</span><span class="o">.</span><span class="n">clear_param_store</span><span class="p">()</span>
+<span class="n">vae</span> <span class="o">=</span> <span class="n">VAE</span><span class="p">(</span><span class="n">use_cuda</span><span class="o">=</span><span class="n">USE_CUDA</span><span class="p">)</span>
+<span class="n">adam_args</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="n">LEARNING_RATE</span><span class="p">}</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">Adam</span><span class="p">(</span><span class="n">adam_args</span><span class="p">)</span>
+<span class="n">svi</span> <span class="o">=</span> <span class="n">SVI</span><span class="p">(</span><span class="n">vae</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">vae</span><span class="o">.</span><span class="n">guide</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">loss</span><span class="o">=</span><span class="n">Trace_ELBO</span><span class="p">())</span>
+
+<span class="n">train_elbo</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">test_elbo</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">NUM_EPOCHS</span><span class="p">):</span>
+    <span class="n">total_epoch_loss_train</span> <span class="o">=</span> <span class="n">train</span><span class="p">(</span><span class="n">svi</span><span class="p">,</span> <span class="n">train_loader</span><span class="p">,</span> <span class="n">use_cuda</span><span class="o">=</span><span class="n">USE_CUDA</span><span class="p">)</span>
+    <span class="n">train_elbo</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="o">-</span><span class="n">total_epoch_loss_train</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[epoch </span><span class="si">%03d</span><span class="s2">]  average training loss: </span><span class="si">%.4f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">epoch</span><span class="p">,</span> <span class="n">total_epoch_loss_train</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">epoch</span> <span class="o">%</span> <span class="n">TEST_FREQUENCY</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># report test diagnostics</span>
+        <span class="n">total_epoch_loss_test</span> <span class="o">=</span> <span class="n">evaluate</span><span class="p">(</span><span class="n">svi</span><span class="p">,</span> <span class="n">test_loader</span><span class="p">,</span> <span class="n">use_cuda</span><span class="o">=</span><span class="n">USE_CUDA</span><span class="p">)</span>
+        <span class="n">test_elbo</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="o">-</span><span class="n">total_epoch_loss_test</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[epoch </span><span class="si">%03d</span><span class="s2">] average test loss: </span><span class="si">%.4f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">epoch</span><span class="p">,</span> <span class="n">total_epoch_loss_test</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[epoch 000]  average training loss: 190.9630
+[epoch 000] average test loss: 155.7649
+[epoch 001]  average training loss: 146.2289
+[epoch 002]  average training loss: 132.9159
+[epoch 003]  average training loss: 124.6936
+[epoch 004]  average training loss: 119.5353
+</pre></div></div>
+</div>
 <div class="section" id="VAE-数学简介">
 <h2>VAE 数学简介<a class="headerlink" href="#VAE-数学简介" title="Permalink to this headline">¶</a></h2>
-<p>变分自编码器（VAE）可以说是实现深度概率建模的最简单 setup. Note that we’re being careful in our choice of language here. The VAE isn’t a model as such—rather the VAE is a particular setup for doing variational inference for a certain class of models. 模型的类别非常广泛: basically any (unsupervised) density estimator with latent random variables. The basic structure of such a model is simple, almost deceptively so (see Fig. 1).</p>
-<center><figure><figcaption><p>Figure 1: the class of deep models we’re interested in.</p>
-</figcaption></figure></center><p>Here we’ve depicted the structure of the kind of model we’re interested in as a graphical model. We have <span class="math notranslate nohighlight">\(N\)</span> observed datapoints <span class="math notranslate nohighlight">\(\{ \bf x_i \}\)</span>. Each datapoint is generated by a (local) latent random variable <span class="math notranslate nohighlight">\(\bf z_i\)</span>. There is also a parameter <span class="math notranslate nohighlight">\(\theta\)</span>, which is global in the sense that all the datapoints depend on it (which is why it’s drawn outside the rectangle). Note that since <span class="math notranslate nohighlight">\(\theta\)</span> is a parameter, it’s not something we’re being Bayesian about. Finally,
-what’s of particular importance here is that we allow for each <span class="math notranslate nohighlight">\(\bf x_i\)</span> to depend on <span class="math notranslate nohighlight">\(\bf z_i\)</span> in a complex, non-linear way. In practice this dependency will be parameterized by a (deep) neural network with parameters <span class="math notranslate nohighlight">\(\theta\)</span>. It’s this non-linearity that makes inference for this class of models particularly challenging.</p>
-<p>Of course this non-linear structure is also one reason why this class of models offers a very flexible approach to modeling complex data. Indeed it’s worth emphasizing that each of the components of the model can be ‘reconfigured’ in a variety of different ways. For example:</p>
+<p>变分自编码器（VAE）可以说是实现深度概率建模的最简单情形. 注意到我们这里措辞非常小心，VAE 不是一个模型 。 准确的来说 VAE is a particular setup for doing variational inference for a certain class of models. 模型的类别非常广泛，基本上包含任何具备潜变量的密度估计模型。这种模型的基本结构非常简单(see Fig. 1).</p>
+<center><figure><img name=vae.png src="_static/img/vae_model.png" style="width: 200px;"><figcaption> <font size="+1"><b>Figure 1</b>: the class of deep models we're interested in.</font></figcaption></figure></center><br><div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># # 画图</span>
+<span class="c1"># from graphviz import Digraph</span>
+<span class="c1"># g = Digraph(&#39;G&#39;)</span>
+<span class="c1"># with g.subgraph(name=&#39;cluster_0&#39;) as c:</span>
+<span class="c1">#     c.edges([(&#39;z&#39;, &#39;x&#39;)])</span>
+<span class="c1">#     c.attr(label=&#39;#N&#39;)</span>
+<span class="c1"># g.edge(&#39;theta&#39;, &#39;x&#39;)</span>
+<span class="c1"># g.attr(label=&quot;Figure 1: the class of deep models we&#39;re interested in.&quot;)</span>
+<span class="c1"># g</span>
+</pre></div>
+</div>
+</div>
+<p>在这里，我们以图模型描述了我们感兴趣的那种模型的结构。We have <span class="math notranslate nohighlight">\(N\)</span> observed datapoints <span class="math notranslate nohighlight">\(\{ \bf x_i \}\)</span>. Each datapoint is generated by a (local) latent random variable <span class="math notranslate nohighlight">\(\bf z_i\)</span>. There is also a parameter <span class="math notranslate nohighlight">\(\theta\)</span>, which is global in the sense that all the datapoints depend on it (这就是为什么它在矩形外部绘制). Note that since <span class="math notranslate nohighlight">\(\theta\)</span> is a parameter, it’s not something we’re being Bayesian about. Finally, what’s of particular importance here is that we allow for
+each <span class="math notranslate nohighlight">\(\bf x_i\)</span> to depend on <span class="math notranslate nohighlight">\(\bf z_i\)</span> in a complex, non-linear way. In practice this dependency will be parameterized by a (deep) neural network with parameters <span class="math notranslate nohighlight">\(\theta\)</span>. It’s this non-linearity that makes inference for this class of models particularly challenging.</p>
+<p>（我们可以灵活的设置模型分布）Of course this non-linear structure is also one reason why this class of models offers a very flexible approach to modeling complex data. Indeed it’s worth emphasizing that each of the components of the model can be ‘reconfigured’ in a variety of different ways. For example:</p>
 <ul class="simple">
 <li><p>the neural network in <span class="math notranslate nohighlight">\(p_\theta({\bf x} | {\bf z})\)</span> can be varied in all the usual ways (number of layers, type of non-linearities, number of hidden units, etc.)</p></li>
 <li><p>we can choose observation likelihoods that suit the dataset at hand: gaussian, bernoulli, categorical, etc.</p></li>
 <li><p>we can choose the number of dimensions in the latent space</p></li>
 </ul>
-<p>The graphical model representation is a useful way to think about the structure of the model, but it can also be fruitful to look at an explicit factorization of the joint probability density:</p>
+<p>（模型分布的分解形式）The graphical model representation is a useful way to think about the structure of the model, but it can also be fruitful to look at an explicit factorization of the joint probability density:</p>
 <div class="math notranslate nohighlight">
 \[p({\bf x}, {\bf z}) = \prod_{i=1}^N p_\theta({\bf x}_i | {\bf z}_i) p({\bf z}_i)\]</div>
 <p>The fact that <span class="math notranslate nohighlight">\(p({\bf x}, {\bf z})\)</span> breaks up into a product of terms like this makes it clear what we mean when we call <span class="math notranslate nohighlight">\(\bf z_i\)</span> a local random variable. For any particular <span class="math notranslate nohighlight">\(i\)</span>, only the single datapoint <span class="math notranslate nohighlight">\(\bf x_i\)</span> depends on <span class="math notranslate nohighlight">\(\bf z_i\)</span>. As such the <span class="math notranslate nohighlight">\(\{\bf z_i\}\)</span> describe local structure, i.e. structure that is private to each data point. This factorized structure also means that we can do subsampling during the course of learning. As such this sort of model
-is amenable to the large data setting. (For more discussion on this and related topics see <a class="reference internal" href="svi_part_ii.html"><span class="doc">SVI Part II</span></a>.)</p>
-<p>That’s all there is to the model. Since the observations depend on the latent random variables in a complicated, non-linear way, we expect the posterior over the latents to have a complex structure. Consequently in order to do inference in this model we need to specify a flexibly family of guides (i.e. variational distributions). Since we want to be able to scale to large datasets, our guide is going to make use of amortization to keep the number of variational parameters under control (see <a class="reference internal" href="svi_part_ii.html"><span class="doc">SVI
-Part II</span></a> for a somewhat more general discussion of amortization).</p>
-<p>Recall that the job of the guide is to ‘guess’ good values for the latent random variables—good in the sense that they’re true to the model prior <em>and</em> true to the data. If we weren’t making use of amortization, we would introduce variational parameters <span class="math notranslate nohighlight">\(\{ \lambda_i \}\)</span> for <em>each</em> datapoint <span class="math notranslate nohighlight">\(\bf x_i\)</span>. These variational parameters would represent our belief about ‘good’ values of <span class="math notranslate nohighlight">\(\bf z_i\)</span>; for example, they could encode the mean and variance of a gaussian distribution in
-<span class="math notranslate nohighlight">\({\bf z}_i\)</span> space. Amortization means that, rather than introducing variational parameters <span class="math notranslate nohighlight">\(\{ \lambda_i \}\)</span>, we instead learn a <em>function</em> that maps each <span class="math notranslate nohighlight">\(\bf x_i\)</span> to an appropriate <span class="math notranslate nohighlight">\(\lambda_i\)</span>. Since we need this function to be flexible, we parameterize it as a neural network. We thus end up with a parameterized family of distributions over the latent <span class="math notranslate nohighlight">\(\bf z\)</span> space that can be instantiated for all <span class="math notranslate nohighlight">\(N\)</span> datapoint <span class="math notranslate nohighlight">\({\bf x}_i\)</span> (see Fig. 2).</p>
-<center><figure><figcaption><p>Figure 2: a graphical representation of the guide.</p>
-</figcaption></figure></center><p>Note that the guide <span class="math notranslate nohighlight">\(q_{\phi}({\bf z} | {\bf x})\)</span> is parameterized by a global parameter <span class="math notranslate nohighlight">\(\phi\)</span> shared by all the datapoints. The goal of inference will be to find ‘good’ values for <span class="math notranslate nohighlight">\(\theta\)</span> and <span class="math notranslate nohighlight">\(\phi\)</span> so that two conditions are satisfied:</p>
+is amenable to the large data setting. (有关此主题和相关主题的更多讨论，请参见`SVI Part II &lt;svi_part_ii.ipynb&gt;`__.)</p>
+<p>这就是模型的全部内容。由于观测值以复杂的非线性方式依赖于潜变量，因此我们期望潜变量后验分布具有复杂的结构，为了在此模型中进行推断，我们需要指定一组灵活的指导分布（即变分分布）。由于我们希望能够扩展到大型数据集，因此我们的指南将使用 amortization 来控制变量参数的数量（有关 amortization 的一般性讨论，请参见 <a class="reference internal" href="svi_part_ii.html"><span class="doc">SVI Part II</span></a>）。</p>
+<p>（指导分布的设置）Recall that the job of the guide is to ‘guess’ good values for the latent random variables—good in the sense that they’re true to the model prior <em>and</em> true to the data. If we weren’t making use of amortization, we would introduce variational parameters <span class="math notranslate nohighlight">\(\{ \lambda_i \}\)</span> for <em>each</em> datapoint <span class="math notranslate nohighlight">\(\bf x_i\)</span>. These variational parameters would represent our belief about ‘good’ values of <span class="math notranslate nohighlight">\(\bf z_i\)</span>; for example, they could encode the mean and variance of a gaussian
+distribution in <span class="math notranslate nohighlight">\({\bf z}_i\)</span> space. Amortization means that, rather than introducing variational parameters <span class="math notranslate nohighlight">\(\{ \lambda_i \}\)</span>, we instead learn a <em>function</em> that maps each <span class="math notranslate nohighlight">\(\bf x_i\)</span> to an appropriate <span class="math notranslate nohighlight">\(\lambda_i\)</span>. Since we need this function to be flexible, we parameterize it as a neural network. We thus end up with a parameterized family of distributions over the latent <span class="math notranslate nohighlight">\(\bf z\)</span> space that can be instantiated for all <span class="math notranslate nohighlight">\(N\)</span> datapoint <span class="math notranslate nohighlight">\({\bf x}_i\)</span> (see Fig. 2).</p>
+<center><figure><img src="_static/img/vae_guide.png" style="width: 200px;"><figcaption> <font size="+1"><b>Figure 2</b>: a graphical representation of the guide. </font></figcaption></figure></center><br><p>（变分推断的目标）Note that the guide <span class="math notranslate nohighlight">\(q_{\phi}({\bf z} | {\bf x})\)</span> is parameterized by a global parameter <span class="math notranslate nohighlight">\(\phi\)</span> shared by all the datapoints. The goal of inference will be to find ‘good’ values for <span class="math notranslate nohighlight">\(\theta\)</span> and <span class="math notranslate nohighlight">\(\phi\)</span> so that two conditions are satisfied:</p>
 <ul class="simple">
 <li><p>the log evidence <span class="math notranslate nohighlight">\(\log p_\theta({\bf x})\)</span> is large. this means our model is a good fit to the data</p></li>
 <li><p>the guide <span class="math notranslate nohighlight">\(q_{\phi}({\bf z} | {\bf x})\)</span> provides a good approximation to the posterior</p></li>
 </ul>
-<p>(For an introduction to stochastic variational inference see <a class="reference internal" href="svi_part_i.html"><span class="doc">SVI Part I</span></a>.)</p>
-<p>At this point we can zoom out and consider the high level structure of our setup. For concreteness, let’s suppose the <span class="math notranslate nohighlight">\(\{ \bf x_i \}\)</span> are images so that the model is a generative model of images. Once we’ve learned a good value of <span class="math notranslate nohighlight">\(\theta\)</span> we can generate images from the model as follows:</p>
+<p>有关随机变分推理的介绍，请参见 <a class="reference internal" href="svi_part_i.html"><span class="doc">SVI Part I</span></a>.</p>
+<p>（解码器）At this point we can zoom out and consider the high level structure of our setup. For concreteness, let’s suppose the <span class="math notranslate nohighlight">\(\{ \bf x_i \}\)</span> are images so that the model is a generative model of images. Once we’ve learned a good value of <span class="math notranslate nohighlight">\(\theta\)</span> we can generate images from the model as follows:</p>
 <ul class="simple">
 <li><p>sample <span class="math notranslate nohighlight">\(\bf z\)</span> according to the prior <span class="math notranslate nohighlight">\(p({\bf z})\)</span></p></li>
 <li><p>sample <span class="math notranslate nohighlight">\(\bf x\)</span> according to the likelihood <span class="math notranslate nohighlight">\(p_\theta({\bf x}|{\bf z})\)</span></p></li>
 </ul>
 <p>Each image is being represented by a latent code <span class="math notranslate nohighlight">\(\bf z\)</span> and that code gets mapped to images using the likelihood, which depends on the <span class="math notranslate nohighlight">\(\theta\)</span> we’ve learned. This is why the likelihood is often called the decoder in this context: its job is to decode <span class="math notranslate nohighlight">\(\bf z\)</span> into <span class="math notranslate nohighlight">\(\bf x\)</span>. Note that since this is a probabilistic model, there is uncertainty about the <span class="math notranslate nohighlight">\(\bf z\)</span> that encodes a given datapoint <span class="math notranslate nohighlight">\(\bf x\)</span>.</p>
-<p>Once we’ve learned good values for <span class="math notranslate nohighlight">\(\theta\)</span> and <span class="math notranslate nohighlight">\(\phi\)</span> we can also go through the following exercise.</p>
+<p>（自编码器）Once we’ve learned good values for <span class="math notranslate nohighlight">\(\theta\)</span> and <span class="math notranslate nohighlight">\(\phi\)</span> we can also go through the following exercise.</p>
 <ul class="simple">
 <li><p>we start with a given image <span class="math notranslate nohighlight">\(\bf x\)</span></p></li>
 <li><p>using our guide we encode it as <span class="math notranslate nohighlight">\(\bf z\)</span></p></li>
 <li><p>using the model likelihood we decode <span class="math notranslate nohighlight">\(\bf z\)</span> and get a reconstructed image <span class="math notranslate nohighlight">\({\bf x}_\rm{reco}\)</span></p></li>
 </ul>
-<p>If we’ve learned good values for <span class="math notranslate nohighlight">\(\theta\)</span> and <span class="math notranslate nohighlight">\(\phi\)</span>, <span class="math notranslate nohighlight">\(\bf x\)</span> and <span class="math notranslate nohighlight">\({\bf x}_\rm{reco}\)</span> should be similar. This should clarify how the word autoencoder ended up being used to describe this setup: the model is the decoder and the guide is the encoder. Together, they can be thought of as an autoencoder.</p>
+<p>If we’ve learned good values for <span class="math notranslate nohighlight">\(\theta\)</span> and <span class="math notranslate nohighlight">\(\phi\)</span>, <span class="math notranslate nohighlight">\(\bf x\)</span> and <span class="math notranslate nohighlight">\({\bf x}_\rm{reco}\)</span> should be similar. 这阐明了“autoencoder”一词的由来：模型分布是解码器，指导分布是编码器。在一起，它们可以被视为自编码器。</p>
 </div>
 <div class="section" id="VAE-in-Pyro">
 <h2>VAE in Pyro<a class="headerlink" href="#VAE-in-Pyro" title="Permalink to this headline">¶</a></h2>
-<p>Let’s see how we implement a VAE in Pyro. The dataset we’re going to model is MNIST, a collection of images of handwritten digits. Since this is a popular benchmark dataset, we can make use of PyTorch’s convenient data loader functionalities to reduce the amount of boilerplate code we need to write:</p>
+<p>让我们看看如何在 Pyro 中实现 VAE。我们要建模的数据集是MNIST，这是手写数字图像的集合。由于这是一个受欢迎的基准数据集，因此我们可以利用PyTorch便利的数据加载器功能来减少我们需要编写的样板代码量：</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -533,7 +699,7 @@ Part II</span></a> for a somewhat more general discussion of amortization).</p>
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -547,14 +713,14 @@ Part II</span></a> for a somewhat more general discussion of amortization).</p>
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># for loading and batching MNIST dataset</span>
 <span class="k">def</span> <span class="nf">setup_data_loaders</span><span class="p">(</span><span class="n">batch_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">use_cuda</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="n">root</span> <span class="o">=</span> <span class="s1">&#39;./data&#39;</span>
-    <span class="n">download</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">download</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">trans</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">()</span>
     <span class="n">train_set</span> <span class="o">=</span> <span class="n">dset</span><span class="o">.</span><span class="n">MNIST</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">trans</span><span class="p">,</span>
                            <span class="n">download</span><span class="o">=</span><span class="n">download</span><span class="p">)</span>
@@ -570,9 +736,9 @@ Part II</span></a> for a somewhat more general discussion of amortization).</p>
 </div>
 </div>
 <p>The main thing to draw attention to here is that we use <code class="docutils literal notranslate"><span class="pre">transforms.ToTensor()</span></code> to normalize the pixel intensities to the range <span class="math notranslate nohighlight">\([0.0, 1.0]\)</span>.</p>
-<p>Next we define a PyTorch module that encapsulates our decoder network:</p>
+<p>（定义用于构建模型分布的 decoder）Next we define a PyTorch module that encapsulates our decoder network:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -598,9 +764,9 @@ Part II</span></a> for a somewhat more general discussion of amortization).</p>
 </div>
 </div>
 <p>Given a latent code <span class="math notranslate nohighlight">\(z\)</span>, the forward call of <code class="docutils literal notranslate"><span class="pre">Decoder</span></code> returns the parameters for a Bernoulli distribution in image space. Since each image is of size <span class="math notranslate nohighlight">\(28\times28=784\)</span>, <code class="docutils literal notranslate"><span class="pre">loc_img</span></code> is of size <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> x 784.</p>
-<p>Next we define a PyTorch module that encapsulates our encoder network:</p>
+<p>（定义用于构建指导分布的 encoder）Next we define a PyTorch module that encapsulates our encoder network:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -629,9 +795,9 @@ Part II</span></a> for a somewhat more general discussion of amortization).</p>
 </div>
 </div>
 <p>Given an image <span class="math notranslate nohighlight">\(\bf x\)</span> the forward call of <code class="docutils literal notranslate"><span class="pre">Encoder</span></code> returns a mean and covariance that together parameterize a (diagonal) Gaussian distribution in latent space.</p>
-<p>With our encoder and decoder networks in hand, we can now write down the stochastic functions that represent our model and guide. First the model:</p>
+<p>（把解码器变成模型分布）With our encoder and decoder networks in hand, we can now write down the stochastic functions that represent our model and guide. First the model:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -658,9 +824,9 @@ Part II</span></a> for a somewhat more general discussion of amortization).</p>
 distribution with diagonal covariance. As such, the log probabilities along each dimension is summed out when we evaluate <code class="docutils literal notranslate"><span class="pre">.log_prob</span></code> for a “latent” sample. Refer to the <a class="reference internal" href="tensor_shapes.html"><span class="doc">Tensor Shapes</span></a> tutorial for more details. - since we’re processing an entire mini-batch of images, we need the leftmost dimension of <code class="docutils literal notranslate"><span class="pre">z_loc</span></code> and <code class="docutils literal notranslate"><span class="pre">z_scale</span></code> to equal the mini-batch size - in case we’re on GPU, we use <code class="docutils literal notranslate"><span class="pre">new_zeros</span></code> and <code class="docutils literal notranslate"><span class="pre">new_ones</span></code> to ensure that newly created tensors are on the same
 GPU device.</p>
 <p>Next we sample the latent <code class="docutils literal notranslate"><span class="pre">z</span></code> from the prior, making sure to give the random variable a unique Pyro name <code class="docutils literal notranslate"><span class="pre">'latent'</span></code>. Then we pass <code class="docutils literal notranslate"><span class="pre">z</span></code> through the decoder network, which returns <code class="docutils literal notranslate"><span class="pre">loc_img</span></code>. We then score the observed images in the mini-batch <code class="docutils literal notranslate"><span class="pre">x</span></code> against the Bernoulli likelihood parametrized by <code class="docutils literal notranslate"><span class="pre">loc_img</span></code>. Note that we flatten <code class="docutils literal notranslate"><span class="pre">x</span></code> so that all the pixels are in the rightmost dimension.</p>
-<p>That’s all there is to it! Note how closely the flow of Pyro primitives in <code class="docutils literal notranslate"><span class="pre">model</span></code> follows the generative story of our model, e.g. as encapsulated by Figure 1. Now we move on to the guide:</p>
+<p>（把编码器编码成指导分布）That’s all there is to it! Note how closely the flow of Pyro primitives in <code class="docutils literal notranslate"><span class="pre">model</span></code> follows the generative story of our model, e.g. as encapsulated by Figure 1. Now we move on to the guide:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -678,9 +844,9 @@ GPU device.</p>
 </div>
 <p>Just like in the model, we first register the PyTorch module we’re using (namely <code class="docutils literal notranslate"><span class="pre">encoder</span></code>) with Pyro. We take the mini-batch of images <code class="docutils literal notranslate"><span class="pre">x</span></code> and pass it through the encoder. Then using the parameters output by the encoder network we use the normal distribution to sample a value of the latent for each image in the mini-batch. Crucially, we use the same name for the latent random variable as we did in the model: <code class="docutils literal notranslate"><span class="pre">'latent'</span></code>. Also, note the use of <code class="docutils literal notranslate"><span class="pre">pyro.plate</span></code> to designate independence of the
 mini-batch dimension, and <code class="docutils literal notranslate"><span class="pre">.to_event(1)</span></code> to enforce dependence on <code class="docutils literal notranslate"><span class="pre">z_dims</span></code>, exactly as we did in the model.</p>
-<p>Now that we’ve defined the full model and guide we can move on to inference. But before we do so let’s see how we package the model and guide in a PyTorch module:</p>
+<p>（组合模型分布，指导分布，已经模型参数）Now that we’ve defined the full model and guide we can move on to inference. But before we do so let’s see how we package the model and guide in a PyTorch module:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -745,7 +911,7 @@ mini-batch dimension, and <code class="docutils literal notranslate"><span class
 <p>We’re now ready for inference. Refer to the full code in the next section.</p>
 <p>First we instantiate an instance of the <code class="docutils literal notranslate"><span class="pre">VAE</span></code> module.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -755,7 +921,7 @@ mini-batch dimension, and <code class="docutils literal notranslate"><span class
 </div>
 <p>Then we setup an instance of the Adam optimizer.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -765,7 +931,7 @@ mini-batch dimension, and <code class="docutils literal notranslate"><span class
 </div>
 <p>Then we setup our inference algorithm, which is going to learn good parameters for the model and guide by maximizing the ELBO:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -775,7 +941,7 @@ mini-batch dimension, and <code class="docutils literal notranslate"><span class
 </div>
 <p>That’s all there is to it. Now we just have to define our training loop:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -805,7 +971,7 @@ mini-batch dimension, and <code class="docutils literal notranslate"><span class
 </ul>
 <p>The logic for adding evaluation logic is analogous:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -833,7 +999,7 @@ statement is stochastic, we’ll get different draws of z every time we run the 
 <h2>Code and Sample results<a class="headerlink" href="#Code-and-Sample-results" title="Permalink to this headline">¶</a></h2>
 <p>Training corresponds to maximizing the evidence lower bound (ELBO) over the training dataset. We train for 100 iterations and evaluate the ELBO for the test dataset, see Figure 3.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -847,8 +1013,8 @@ statement is stochastic, we’ll get different draws of z every time we run the 
 </pre></div>
 </div>
 </div>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -883,26 +1049,227 @@ statement is stochastic, we’ll get different draws of z every time we run the 
 </pre></div>
 </div>
 </div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Downloading https://d2hg8soec8ck9v.cloudfront.net/datasets/mnist/train-images-idx3-ubyte.gz to ./data/MNIST/raw/train-images-idx3-ubyte.gz
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "1539b0da8cf944af8aeb49401f60fce0", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Extracting ./data/MNIST/raw/train-images-idx3-ubyte.gz to ./data/MNIST/raw
+Downloading https://d2hg8soec8ck9v.cloudfront.net/datasets/mnist/train-labels-idx1-ubyte.gz to ./data/MNIST/raw/train-labels-idx1-ubyte.gz
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "ef6bc6c8bdf04b3eb613a84c21a3dd30", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Extracting ./data/MNIST/raw/train-labels-idx1-ubyte.gz to ./data/MNIST/raw
+Downloading https://d2hg8soec8ck9v.cloudfront.net/datasets/mnist/t10k-images-idx3-ubyte.gz to ./data/MNIST/raw/t10k-images-idx3-ubyte.gz
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "bd830ef4c5424b7b9b95ca7a31496cd4", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Extracting ./data/MNIST/raw/t10k-images-idx3-ubyte.gz to ./data/MNIST/raw
+Downloading https://d2hg8soec8ck9v.cloudfront.net/datasets/mnist/t10k-labels-idx1-ubyte.gz to ./data/MNIST/raw/t10k-labels-idx1-ubyte.gz
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "fd18fd628654409d9881814821562961", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Extracting ./data/MNIST/raw/t10k-labels-idx1-ubyte.gz to ./data/MNIST/raw
+Processing...
+Done!
+[epoch 000]  average training loss: 191.0216
+[epoch 000] average test loss: 156.0872
+[epoch 001]  average training loss: 146.8141
+[epoch 002]  average training loss: 133.2540
+[epoch 003]  average training loss: 124.6775
+[epoch 004]  average training loss: 119.5152
+[epoch 005]  average training loss: 116.1240
+[epoch 005] average test loss: 113.7908
+[epoch 006]  average training loss: 113.7285
+[epoch 007]  average training loss: 112.0445
+[epoch 008]  average training loss: 110.7292
+[epoch 009]  average training loss: 109.7455
+[epoch 010]  average training loss: 108.9070
+[epoch 010] average test loss: 107.7720
+[epoch 011]  average training loss: 108.2513
+[epoch 012]  average training loss: 107.6953
+[epoch 013]  average training loss: 107.2849
+[epoch 014]  average training loss: 106.8870
+[epoch 015]  average training loss: 106.4983
+[epoch 015] average test loss: 105.9786
+[epoch 016]  average training loss: 106.1872
+[epoch 017]  average training loss: 105.9363
+[epoch 018]  average training loss: 105.7087
+[epoch 019]  average training loss: 105.4600
+[epoch 020]  average training loss: 105.2648
+[epoch 020] average test loss: 104.7753
+[epoch 021]  average training loss: 105.0442
+[epoch 022]  average training loss: 104.9031
+[epoch 023]  average training loss: 104.7304
+[epoch 024]  average training loss: 104.6027
+[epoch 025]  average training loss: 104.4586
+[epoch 025] average test loss: 104.2971
+[epoch 026]  average training loss: 104.3756
+[epoch 027]  average training loss: 104.2278
+[epoch 028]  average training loss: 104.1049
+[epoch 029]  average training loss: 104.0565
+[epoch 030]  average training loss: 103.8851
+[epoch 030] average test loss: 103.5858
+[epoch 031]  average training loss: 103.7705
+[epoch 032]  average training loss: 103.7331
+[epoch 033]  average training loss: 103.6272
+[epoch 034]  average training loss: 103.5645
+[epoch 035]  average training loss: 103.4693
+[epoch 035] average test loss: 103.1316
+[epoch 036]  average training loss: 103.3898
+[epoch 037]  average training loss: 103.3199
+[epoch 038]  average training loss: 103.2840
+[epoch 039]  average training loss: 103.1866
+[epoch 040]  average training loss: 103.1108
+[epoch 040] average test loss: 103.0911
+[epoch 041]  average training loss: 103.0730
+[epoch 042]  average training loss: 103.0086
+[epoch 043]  average training loss: 102.9338
+[epoch 044]  average training loss: 102.8886
+[epoch 045]  average training loss: 102.8416
+[epoch 045] average test loss: 102.8022
+[epoch 046]  average training loss: 102.7832
+[epoch 047]  average training loss: 102.7389
+[epoch 048]  average training loss: 102.6800
+[epoch 049]  average training loss: 102.6738
+[epoch 050]  average training loss: 102.5855
+[epoch 050] average test loss: 102.5790
+[epoch 051]  average training loss: 102.5615
+[epoch 052]  average training loss: 102.4934
+[epoch 053]  average training loss: 102.4610
+[epoch 054]  average training loss: 102.4274
+[epoch 055]  average training loss: 102.3712
+[epoch 055] average test loss: 102.3923
+[epoch 056]  average training loss: 102.3328
+[epoch 057]  average training loss: 102.2912
+[epoch 058]  average training loss: 102.1891
+[epoch 059]  average training loss: 102.2194
+[epoch 060]  average training loss: 102.1762
+[epoch 060] average test loss: 102.1223
+[epoch 061]  average training loss: 102.1585
+[epoch 062]  average training loss: 102.0887
+[epoch 063]  average training loss: 102.0703
+[epoch 064]  average training loss: 102.0091
+[epoch 065]  average training loss: 101.9924
+[epoch 065] average test loss: 102.0361
+[epoch 066]  average training loss: 101.9461
+[epoch 067]  average training loss: 101.8985
+[epoch 068]  average training loss: 101.8809
+[epoch 069]  average training loss: 101.8587
+[epoch 070]  average training loss: 101.8102
+[epoch 070] average test loss: 102.1124
+[epoch 071]  average training loss: 101.7739
+[epoch 072]  average training loss: 101.7548
+[epoch 073]  average training loss: 101.7252
+[epoch 074]  average training loss: 101.7424
+[epoch 075]  average training loss: 101.6693
+[epoch 075] average test loss: 101.8703
+[epoch 076]  average training loss: 101.6238
+[epoch 077]  average training loss: 101.5941
+[epoch 078]  average training loss: 101.5562
+[epoch 079]  average training loss: 101.5380
+[epoch 080]  average training loss: 101.4967
+[epoch 080] average test loss: 101.6312
+[epoch 081]  average training loss: 101.4572
+[epoch 082]  average training loss: 101.4549
+[epoch 083]  average training loss: 101.3729
+[epoch 084]  average training loss: 101.3880
+[epoch 085]  average training loss: 101.3953
+[epoch 085] average test loss: 101.5520
+[epoch 086]  average training loss: 101.3212
+[epoch 087]  average training loss: 101.3289
+[epoch 088]  average training loss: 101.3108
+[epoch 089]  average training loss: 101.2534
+[epoch 090]  average training loss: 101.2607
+[epoch 090] average test loss: 101.2997
+[epoch 091]  average training loss: 101.2435
+[epoch 092]  average training loss: 101.1965
+[epoch 093]  average training loss: 101.1350
+[epoch 094]  average training loss: 101.1215
+[epoch 095]  average training loss: 101.0969
+[epoch 095] average test loss: 101.2543
+[epoch 096]  average training loss: 101.1045
+[epoch 097]  average training loss: 101.0621
+[epoch 098]  average training loss: 101.0410
+[epoch 099]  average training loss: 101.0019
+</pre></div></div>
+</div>
 <center><figure><figcaption><p>Figure 3: How the test ELBO evolves over the course of training.</p>
 </figcaption></figure></center><p>Next we show a set of randomly sampled images from the model. These are generated by drawing random samples of <code class="docutils literal notranslate"><span class="pre">z</span></code> and generating an image for each one, see Figure 4.</p>
-<center><figure><table><tr><td></td><td></td></tr></table><figcaption><p>Figure 4: Samples from generative model.</p>
-</figcaption></figure></center><p>We also study the 50-dimensional latent space of the entire test dataset by encoding all MNIST images and embedding their means into a 2-dimensional T-SNE space. We then color each embedded image by its class. The resulting Figure 5 shows separation by class with variance within each class-cluster.</p>
-<center><figure><figcaption><p>Figure 5: T-SNE Embedding of the latent z. The colors correspond to different classes of digits.</p>
-</figcaption></figure></center><p>See the full code on <a class="reference external" href="https://github.com/pyro-ppl/pyro/blob/dev/examples/vae/vae.py">Github</a>.</p>
-</div>
-<div class="section" id="参考文献">
-<h2>参考文献<a class="headerlink" href="#参考文献" title="Permalink to this headline">¶</a></h2>
+<center>
+<figure>
+    <table>
+        <tr>
+            <td>
+                <imgm src="_static/img/vae_plots/vae_embeddings_pt1.jpg"  style="width: 350px;">
+            </td>
+            <td>
+                <img src="_static/img/vae_plots/vae_embeddings_pt2.jpg" style="width: 350px;">
+            </td>
+        </tr>
+    </table>
+    <figcaption>
+        <font size="+1"><b>Figure 4:</b> Samples from generative model.</font>
+    </figcaption>
+</figure>
+</center><p>We also study the 50-dimensional latent space of the entire test dataset by encoding all MNIST images and embedding their means into a 2-dimensional T-SNE space. We then color each embedded image by its class. The resulting Figure 5 shows separation by class with variance within each class-cluster.</p>
+<center>
+<figure>
+<img src="_static/img/vae_plots/VAE_embedding.png"  style="width: 550px;">
+<figcaption>
+<font size="+1"><b>Figure 5:</b> T-SNE Embedding of the latent z. The colors correspond to different classes of digits.</font>
+</figcaption>
+</figure>
+</center><p>See the full code on <a class="reference external" href="https://github.com/pyro-ppl/pyro/blob/dev/examples/vae/vae.py">Github</a>.</p>
+<blockquote>
+<div><p>参考文献</p>
+</div></blockquote>
 <p>[1] <code class="docutils literal notranslate"><span class="pre">Auto-Encoding</span> <span class="pre">Variational</span> <span class="pre">Bayes</span></code>,     Diederik P Kingma, Max Welling</p>
 <p>[2] <code class="docutils literal notranslate"><span class="pre">Stochastic</span> <span class="pre">Backpropagation</span> <span class="pre">and</span> <span class="pre">Approximate</span> <span class="pre">Inference</span> <span class="pre">in</span> <span class="pre">Deep</span> <span class="pre">Generative</span> <span class="pre">Models</span></code>,      Danilo Jimenez Rezende, Shakir Mohamed, Daan Wierstra</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>
-</pre></div>
-</div>
-</div>
 </div>
 </div>
 
