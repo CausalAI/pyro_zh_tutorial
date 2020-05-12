@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>贝叶斯回归-介绍(Part 1) &mdash; Pyro Tutorials 编译 1.3.0 documentation</title>
+  <title>贝叶斯回归简介(Part I) &mdash; Pyro Tutorials 编译 1.3.0 documentation</title>
   
 
   
@@ -38,7 +38,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="贝叶斯回归-推断算法(Part 2)" href="bayesian_regression_ii.html" />
+    <link rel="next" title="贝叶斯回归推断算法(Part II)" href="bayesian_regression_ii.html" />
     <link rel="prev" title="变分自编码器" href="vae.html" /> 
 </head>
 
@@ -110,7 +110,7 @@
 <p class="caption"><span class="caption-text">Examples:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="vae.html">变分自编码器</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">贝叶斯回归-介绍(Part 1)</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">贝叶斯回归简介(Part I)</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#Setup">Setup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#线性回归">线性回归</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#Training-with-PyTorch-Optimizers">Training with PyTorch Optimizers</a></li>
@@ -130,15 +130,15 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="bayesian_regression_ii.html">贝叶斯回归-推断算法(Part 2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bayesian_regression_ii.html">贝叶斯回归推断算法(Part II)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dmm.html">深度马尔可夫模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="air.html">Attend Infer Repeat</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ss-vae.html">半监督 VAE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ss-vae.html">半监督变分自编码器</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stable.html">随机波动率的 Levy 稳定分布模型</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Contributed:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="gmm.html">高斯混合模型</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gmm.html">离散潜变量-高斯混合模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="gp.html">高斯过程</a></li>
 <li class="toctree-l1"><a class="reference internal" href="gplvm.html">高斯过程潜变量模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bo.html">贝叶斯优化</a></li>
@@ -215,7 +215,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>贝叶斯回归-介绍(Part 1)</li>
+      <li>贝叶斯回归简介(Part I)</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -476,8 +476,8 @@ div.rendered_html tbody tr:hover {
     text-align: unset;
 }
 </style>
-<div class="section" id="贝叶斯回归-介绍(Part-1)">
-<h1>贝叶斯回归-介绍(Part 1)<a class="headerlink" href="#贝叶斯回归-介绍(Part-1)" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="贝叶斯回归简介(Part-I)">
+<h1>贝叶斯回归简介(Part I)<a class="headerlink" href="#贝叶斯回归简介(Part-I)" title="Permalink to this headline">¶</a></h1>
 <p>回归是机器学习中最常见和最基本的监督学习任务之一。假设我们有如下形式的数据集 <span class="math notranslate nohighlight">\(\mathcal{D}\)</span>：</p>
 <div class="math notranslate nohighlight">
 \[\mathcal{D}  = \{ (X_i, y_i) \} \qquad \text{for}\qquad i=1,2,...,N\]</div>
@@ -1129,7 +1129,7 @@ hypothesis.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="bayesian_regression_ii.html" class="btn btn-neutral float-right" title="贝叶斯回归-推断算法(Part 2)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="bayesian_regression_ii.html" class="btn btn-neutral float-right" title="贝叶斯回归推断算法(Part II)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="vae.html" class="btn btn-neutral float-left" title="变分自编码器" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

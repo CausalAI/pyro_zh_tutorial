@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>高斯混合模型 &mdash; Pyro Tutorials 编译 1.3.0 documentation</title>
+  <title>离散潜变量-高斯混合模型 &mdash; Pyro Tutorials 编译 1.3.0 documentation</title>
   
 
   
@@ -110,16 +110,16 @@
 <p class="caption"><span class="caption-text">Examples:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="vae.html">变分自编码器</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bayesian_regression.html">贝叶斯回归-介绍(Part 1)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bayesian_regression_ii.html">贝叶斯回归-推断算法(Part 2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bayesian_regression.html">贝叶斯回归简介(Part I)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bayesian_regression_ii.html">贝叶斯回归推断算法(Part II)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dmm.html">深度马尔可夫模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="air.html">Attend Infer Repeat</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ss-vae.html">半监督 VAE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ss-vae.html">半监督变分自编码器</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stable.html">随机波动率的 Levy 稳定分布模型</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Contributed:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">高斯混合模型</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">离散潜变量-高斯混合模型</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#Overview">Overview</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Training-a-MAP-estimator">Training a MAP estimator</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Serving-the-model:-predicting-membership">Serving the model: predicting membership</a><ul>
@@ -206,7 +206,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>高斯混合模型</li>
+      <li>离散潜变量-高斯混合模型</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -467,9 +467,9 @@ div.rendered_html tbody tr:hover {
     text-align: unset;
 }
 </style>
-<div class="section" id="高斯混合模型">
-<h1>高斯混合模型<a class="headerlink" href="#高斯混合模型" title="Permalink to this headline">¶</a></h1>
-<p>This is tutorial demonstrates how to marginalize out discrete latent variables in Pyro through the motivating example of a mixture model. We’ll focus on the mechanics of parallel enumeration, keeping the model simple by training a trivial 1-D Gaussian model on a tiny 5-point dataset. See also the <a class="reference external" href="http://pyro.ai/examples/enumeration.html">enumeration tutorial</a> for a broader introduction to parallel enumeration.</p>
+<div class="section" id="离散潜变量-高斯混合模型">
+<h1>离散潜变量-高斯混合模型<a class="headerlink" href="#离散潜变量-高斯混合模型" title="Permalink to this headline">¶</a></h1>
+<p>本教程演示了如何 <strong>marginalize out discrete latent variables</strong> in Pyro through the motivating example of a mixture model. We’ll focus on the mechanics of parallel enumeration, keeping the model simple by training a trivial 1-D Gaussian model on a tiny 5-point dataset. See also the <a class="reference external" href="http://pyro.ai/examples/enumeration.html">enumeration tutorial</a> for a broader introduction to parallel enumeration.</p>
 <p><strong>Table of contents</strong></p>
 <ul class="simple">
 <li><p><a class="reference external" href="#Overview">Overview</a></p></li>
@@ -483,7 +483,7 @@ div.rendered_html tbody tr:hover {
 <li><p><a class="reference external" href="#MCMC">MCMC</a></p></li>
 </ul>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -515,7 +515,7 @@ div.rendered_html tbody tr:hover {
 These nonstandard values are then replayed in the model. When enumerating variables in the model, the variables must be enumerated in parallel and must not appear in the guide. Mathematically, guide-side enumeration simply reduces variance in a stochastic ELBO by enumerating all values, whereas model-side enumeration avoids an application of Jensen’s inequality by exactly marginalizing out a variable.</p>
 <p>Here is our tiny dataset. It has five points.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -529,7 +529,7 @@ These nonstandard values are then replayed in the model. When enumerating variab
 <p>Let’s start by learning model parameters <code class="docutils literal notranslate"><span class="pre">weights</span></code>, <code class="docutils literal notranslate"><span class="pre">locs</span></code>, and <code class="docutils literal notranslate"><span class="pre">scale</span></code> given priors and data. We will learn point estimates of these using an <a class="reference external" href="http://docs.pyro.ai/en/dev/infer.autoguide.html#autodelta">AutoDelta</a> guide (named after its delta distributions). Our model will learn global mixture weights, the location of each mixture component, and a shared scale that is common to both components. During inference,
 <a class="reference external" href="http://docs.pyro.ai/en/dev/inference_algos.html#pyro.infer.traceenum_elbo.TraceEnum_ELBO">TraceEnum_ELBO</a> will marginalize out the assignments of datapoints to clusters.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -553,7 +553,7 @@ These nonstandard values are then replayed in the model. When enumerating variab
 <p>To run inference with this <code class="docutils literal notranslate"><span class="pre">(model,guide)</span></code> pair, we use Pyro’s <a class="reference external" href="http://docs.pyro.ai/en/dev/poutine.html#pyro.infer.enum.config_enumerate">config_enumerate()</a> handler to enumerate over all assignments in each iteration. Since we’ve wrapped the batched Categorical assignments in a <a class="reference external" href="http://docs.pyro.ai/en/dev/primitives.html#pyro.plate">pyro.plate</a> indepencence context, this enumeration can happen in parallel: we enumerate only 2 possibilites, rather than <code class="docutils literal notranslate"><span class="pre">2**len(data)</span> <span class="pre">=</span> <span class="pre">32</span></code>. Finally, to
 use the parallel version of enumeration, we inform Pyro that we’re only using a single <a class="reference external" href="http://docs.pyro.ai/en/dev/primitives.html#pyro.plate">plate</a> via <code class="docutils literal notranslate"><span class="pre">max_plate_nesting=1</span></code>; this lets Pyro know that we’re using the rightmost dimension <a class="reference external" href="http://docs.pyro.ai/en/dev/primitives.html#pyro.plate">plate</a> and that Pyro can use any other dimension for parallelization.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -564,7 +564,7 @@ use the parallel version of enumeration, we inform Pyro that we’re only using 
 </div>
 <p>Before inference we’ll initialize to plausible values. Mixture models are very succeptible to local modes. A common approach is choose the best among many randomly initializations, where the cluster means are initialized from random subsamples of the data. Since we’re using an <a class="reference external" href="http://docs.pyro.ai/en/dev/infer.autoguide.html#autodelta">AutoDelta</a> guide, we can initialize by defining a custom <code class="docutils literal notranslate"><span class="pre">init_loc_fn()</span></code>.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -604,7 +604,7 @@ seed = 7, initial_loss = 25.665584564208984
 </div>
 <p>During training, we’ll collect both losses and gradient norms to monitor convergence. We can do this using PyTorch’s <code class="docutils literal notranslate"><span class="pre">.register_hook()</span></code> method.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -783,7 +783,7 @@ tensor([0, 0, 1, 1, 1])
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/gmm_22_0.png" src="_images/gmm_22_0.png" />
+<img alt="_images/gmm_24_0.png" src="_images/gmm_24_0.png" />
 </div>
 </div>
 <p>To generate random posterior assignments rather than MAP assignments, we could set <code class="docutils literal notranslate"><span class="pre">temperature=1</span></code>.</p>
@@ -824,7 +824,7 @@ tensor([0, 0, 1, 1, 1])
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/gmm_26_0.png" src="_images/gmm_26_0.png" />
+<img alt="_images/gmm_28_0.png" src="_images/gmm_28_0.png" />
 </div>
 </div>
 </div>
@@ -902,7 +902,7 @@ tensor([0, 0, 1, 1, 1])
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/gmm_30_0.png" src="_images/gmm_30_0.png" />
+<img alt="_images/gmm_32_0.png" src="_images/gmm_32_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
@@ -925,7 +925,7 @@ tensor([0, 0, 1, 1, 1])
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/gmm_31_0.png" src="_images/gmm_31_0.png" />
+<img alt="_images/gmm_33_0.png" src="_images/gmm_33_0.png" />
 </div>
 </div>
 <p>We can now examine the guide’s local <code class="docutils literal notranslate"><span class="pre">assignment_probs</span></code> variable.</p>
@@ -951,7 +951,7 @@ tensor([0, 0, 1, 1, 1])
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/gmm_33_0.png" src="_images/gmm_33_0.png" />
+<img alt="_images/gmm_35_0.png" src="_images/gmm_35_0.png" />
 </div>
 </div>
 </div>
@@ -1011,7 +1011,7 @@ Sample: 100%|██████████| 300/300 [00:30&lt;00:00,  9.99it/s,
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/gmm_37_0.png" src="_images/gmm_37_0.png" />
+<img alt="_images/gmm_39_0.png" src="_images/gmm_39_0.png" />
 </div>
 </div>
 <p>Note that due to nonidentifiability of the mixture components the likelihood landscape has two equally likely modes, near <code class="docutils literal notranslate"><span class="pre">(11,0.5)</span></code> and <code class="docutils literal notranslate"><span class="pre">(0.5,11)</span></code>. NUTS has difficulty switching between the two modes.</p>
@@ -1034,7 +1034,7 @@ Sample: 100%|██████████| 300/300 [00:30&lt;00:00,  9.99it/s,
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/gmm_39_0.png" src="_images/gmm_39_0.png" />
+<img alt="_images/gmm_41_0.png" src="_images/gmm_41_0.png" />
 </div>
 </div>
 <div class="nbinput nblast docutils container">

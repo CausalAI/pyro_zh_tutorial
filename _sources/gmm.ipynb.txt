@@ -2,16 +2,20 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
-    "# 高斯混合模型\n",
+    "# 离散潜变量-高斯混合模型\n",
     "\n",
-    "This is tutorial demonstrates how to marginalize out discrete latent variables in Pyro through the motivating example of a mixture model. We'll focus on the mechanics of parallel enumeration, keeping the model simple by training a trivial 1-D Gaussian model on a tiny 5-point dataset. See also the [enumeration tutorial](http://pyro.ai/examples/enumeration.html) for a broader introduction to parallel enumeration."
+    "本教程演示了如何 **marginalize out discrete latent variables** in Pyro through the motivating example of a mixture model. We'll focus on the mechanics of parallel enumeration, keeping the model simple by training a trivial 1-D Gaussian model on a tiny 5-point dataset. See also the [enumeration tutorial](http://pyro.ai/examples/enumeration.html) for a broader introduction to parallel enumeration."
    ]
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "**Table of contents**\n",
     "\n",
@@ -25,8 +29,10 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 1,
-   "metadata": {},
+   "execution_count": 2,
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "import os\n",
@@ -52,7 +58,9 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "## Overview\n",
     "\n",
@@ -63,8 +71,10 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 2,
-   "metadata": {},
+   "execution_count": 3,
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "data = torch.tensor([0., 1., 10., 11., 12.])"
@@ -72,7 +82,9 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "## Training a MAP estimator\n",
     "\n",
@@ -81,8 +93,10 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 3,
-   "metadata": {},
+   "execution_count": 6,
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "K = 2  # Fixed number of components.\n",
@@ -103,15 +117,19 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "To run inference with this `(model,guide)` pair, we use Pyro's [config_enumerate()](http://docs.pyro.ai/en/dev/poutine.html#pyro.infer.enum.config_enumerate) handler to enumerate over all assignments in each iteration. Since we've wrapped the batched Categorical assignments in a [pyro.plate](http://docs.pyro.ai/en/dev/primitives.html#pyro.plate) indepencence context, this enumeration can happen in parallel: we enumerate only 2 possibilites, rather than `2**len(data) = 32`. Finally, to use the parallel version of enumeration, we inform Pyro that we're only using a single [plate](http://docs.pyro.ai/en/dev/primitives.html#pyro.plate) via `max_plate_nesting=1`; this lets Pyro know that we're using the rightmost dimension [plate](http://docs.pyro.ai/en/dev/primitives.html#pyro.plate) and that Pyro can use any other dimension for parallelization."
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 4,
-   "metadata": {},
+   "execution_count": 7,
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "optim = pyro.optim.Adam({'lr': 0.1, 'betas': [0.8, 0.99]})\n",
@@ -120,15 +138,19 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "Before inference we'll initialize to plausible values. Mixture models are very succeptible to local modes. A common approach is choose the best among many randomly initializations, where the cluster means are initialized from random subsamples of the data. Since we're using an [AutoDelta](http://docs.pyro.ai/en/dev/infer.autoguide.html#autodelta) guide, we can initialize by defining a custom ``init_loc_fn()``."
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 5,
-   "metadata": {},
+   "execution_count": 8,
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "name": "stdout",
@@ -166,15 +188,19 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "During training, we'll collect both losses and gradient norms to monitor convergence. We can do this using PyTorch's `.register_hook()` method."
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 6,
-   "metadata": {},
+   "execution_count": 9,
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "name": "stdout",
@@ -202,7 +228,9 @@
   {
    "cell_type": "code",
    "execution_count": 7,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "data": {
@@ -227,7 +255,9 @@
   {
    "cell_type": "code",
    "execution_count": 8,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "data": {
@@ -253,7 +283,9 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "Here are the learned parameters:"
    ]
@@ -261,7 +293,9 @@
   {
    "cell_type": "code",
    "execution_count": 9,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "name": "stdout",
@@ -285,7 +319,9 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "The model's `weights` are as expected, with about 2/5 of the data in the first component and 3/5 in the second component. Next let's visualize the mixture model."
    ]
@@ -293,7 +329,9 @@
   {
    "cell_type": "code",
    "execution_count": 10,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "data": {
@@ -322,15 +360,31 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
-    "Finally note that optimization with mixture models is non-convex and can often get stuck in local optima. For example in this tutorial, we observed that the mixture model gets stuck in an everthing-in-one-cluster hypothesis if `scale` is initialized to be too large.\n",
-    "\n",
+    "Finally note that optimization with mixture models is non-convex and can often get stuck in local optima. For example in this tutorial, we observed that the mixture model gets stuck in an everthing-in-one-cluster hypothesis if `scale` is initialized to be too large."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "Collapsed": "false"
+   },
+   "source": [
     "## Serving the model: predicting membership\n",
     "\n",
     "Now that we've trained a mixture model, we might want to use the model as a classifier. \n",
-    "During training we marginalized out the assignment variables in the model. While this provides fast convergence, it prevents us from reading the cluster assignments from the guide. We'll discuss two options for treating the model as a classifier: first using [infer_discrete](http://docs.pyro.ai/en/dev/inference_algos.html#pyro.infer.discrete.infer_discrete) (much faster) and second by training a secondary guide using enumeration inside SVI (slower but more general).\n",
-    "\n",
+    "During training we marginalized out the assignment variables in the model. While this provides fast convergence, it prevents us from reading the cluster assignments from the guide. We'll discuss two options for treating the model as a classifier: first using [infer_discrete](http://docs.pyro.ai/en/dev/inference_algos.html#pyro.infer.discrete.infer_discrete) (much faster) and second by training a secondary guide using enumeration inside SVI (slower but more general)."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "Collapsed": "false"
+   },
+   "source": [
     "### Predicting membership using discrete inference\n",
     "\n",
     "The fastest way to predict membership is to use the [infer_discrete](http://docs.pyro.ai/en/dev/inference_algos.html#pyro.infer.discrete.infer_discrete) handler, together with `trace` and `replay`. Let's start out with a MAP classifier, setting `infer_discrete`'s temperature parameter to zero. For a deeper look at effect handlers like `trace`, `replay`, and `infer_discrete`, see the [effect handler tutorial](http://pyro.ai/examples/effect_handlers.html)."
@@ -339,7 +393,9 @@
   {
    "cell_type": "code",
    "execution_count": 11,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "name": "stdout",
@@ -364,7 +420,9 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "Indeed we can run this classifer on new data"
    ]
@@ -372,7 +430,9 @@
   {
    "cell_type": "code",
    "execution_count": 12,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "data": {
@@ -397,7 +457,9 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "To generate random posterior assignments rather than MAP assignments, we could set `temperature=1`."
    ]
@@ -405,7 +467,9 @@
   {
    "cell_type": "code",
    "execution_count": 13,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "name": "stdout",
@@ -421,7 +485,9 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "Since the classes are very well separated, we zoom in to the boundary between classes, around 5.75."
    ]
@@ -429,7 +495,9 @@
   {
    "cell_type": "code",
    "execution_count": 14,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "data": {
@@ -454,7 +522,9 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "### Predicting membership by enumerating in the guide\n",
     "\n",
@@ -466,7 +536,9 @@
   {
    "cell_type": "code",
    "execution_count": 15,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "@config_enumerate\n",
@@ -485,7 +557,9 @@
   {
    "cell_type": "code",
    "execution_count": 16,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "name": "stdout",
@@ -518,7 +592,9 @@
   {
    "cell_type": "code",
    "execution_count": 17,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "data": {
@@ -543,7 +619,9 @@
   {
    "cell_type": "code",
    "execution_count": 18,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "data": {
@@ -569,7 +647,9 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "We can now examine the guide's local `assignment_probs` variable."
    ]
@@ -577,7 +657,9 @@
   {
    "cell_type": "code",
    "execution_count": 19,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "data": {
@@ -605,7 +687,9 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "## MCMC\n",
     "\n",
@@ -615,7 +699,9 @@
   {
    "cell_type": "code",
    "execution_count": 20,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "name": "stderr",
@@ -638,7 +724,9 @@
   {
    "cell_type": "code",
    "execution_count": 21,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": [
     "X, Y = posterior_samples[\"locs\"].t()"
@@ -647,7 +735,9 @@
   {
    "cell_type": "code",
    "execution_count": 22,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "data": {
@@ -673,7 +763,9 @@
   },
   {
    "cell_type": "markdown",
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "source": [
     "Note that due to nonidentifiability of the mixture components the likelihood landscape has two equally likely modes, near `(11,0.5)` and `(0.5,11)`. NUTS has difficulty switching between the two modes."
    ]
@@ -681,7 +773,9 @@
   {
    "cell_type": "code",
    "execution_count": 23,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [
     {
      "data": {
@@ -707,7 +801,9 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "metadata": {},
+   "metadata": {
+    "Collapsed": "false"
+   },
    "outputs": [],
    "source": []
   }
@@ -745,5 +841,5 @@
   }
  },
  "nbformat": 4,
- "nbformat_minor": 2
+ "nbformat_minor": 4
 }

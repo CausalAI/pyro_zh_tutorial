@@ -110,26 +110,25 @@
 <p class="caption"><span class="caption-text">Examples:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="vae.html">变分自编码器</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bayesian_regression.html">贝叶斯回归-介绍(Part 1)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bayesian_regression_ii.html">贝叶斯回归-推断算法(Part 2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bayesian_regression.html">贝叶斯回归简介(Part I)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bayesian_regression_ii.html">贝叶斯回归推断算法(Part II)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dmm.html">深度马尔可夫模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="air.html">Attend Infer Repeat</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ss-vae.html">半监督 VAE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ss-vae.html">半监督变分自编码器</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stable.html">随机波动率的 Levy 稳定分布模型</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Contributed:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="gmm.html">高斯混合模型</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gmm.html">离散潜变量-高斯混合模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="gp.html">高斯过程</a></li>
 <li class="toctree-l1"><a class="reference internal" href="gplvm.html">高斯过程潜变量模型</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">贝叶斯优化</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#Problem-Setup">Problem Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Define-an-objective-function">Define an objective function</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Setting-a-Gaussian-Process-prior">Setting a Gaussian Process prior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#目标函数">目标函数</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#高斯过程先验">高斯过程先验</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Define-an-acquisition-function">Define an acquisition function</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#The-inner-loop-of-Bayesian-Optimization">The inner loop of Bayesian Optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Running-the-algorithm">Running the algorithm</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#参考文献">参考文献</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="easyguide.html">用 EasyGuide 构建 guides</a></li>
@@ -519,14 +518,14 @@ will guide the query points <span class="math notranslate nohighlight">\(x_n\)</
 </div>
 </div>
 </div>
-<div class="section" id="Define-an-objective-function">
-<h2>Define an objective function<a class="headerlink" href="#Define-an-objective-function" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="目标函数">
+<h2>目标函数<a class="headerlink" href="#目标函数" title="Permalink to this headline">¶</a></h2>
 <p>For the purposes of demonstration, the objective function we are going to consider is the <a class="reference external" href="https://www.sfu.ca/~ssurjano/forretal08.html">Forrester et al. (2008) function</a>:</p>
 <div class="math notranslate nohighlight">
 \[f(x) = (6x-2)^2 \sin(12x-4), \quad x\in [0, 1].\]</div>
 <p>This function has both a local minimum and a global minimum. The global minimum is at <span class="math notranslate nohighlight">\(x^* = 0.75725\)</span>.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -537,7 +536,7 @@ will guide the query points <span class="math notranslate nohighlight">\(x_n\)</
 </div>
 <p>Let’s begin by plotting <span class="math notranslate nohighlight">\(f\)</span>.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -552,12 +551,12 @@ will guide the query points <span class="math notranslate nohighlight">\(x_n\)</
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/bo_8_0.png" src="_images/bo_8_0.png" />
+<img alt="_images/bo_9_0.png" src="_images/bo_9_0.png" />
 </div>
 </div>
 </div>
-<div class="section" id="Setting-a-Gaussian-Process-prior">
-<h2>Setting a Gaussian Process prior<a class="headerlink" href="#Setting-a-Gaussian-Process-prior" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="高斯过程先验">
+<h2>高斯过程先验<a class="headerlink" href="#高斯过程先验" title="Permalink to this headline">¶</a></h2>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Gaussian_process">Gaussian processes</a> are a popular choice for a function priors due to their power and flexibility. The core of a Gaussian Process is its covariance function <span class="math notranslate nohighlight">\(k\)</span>, which governs the similarity of <span class="math notranslate nohighlight">\(f(x)\)</span> for pairs of input points. Here we will use a Gaussian Process as our prior for the objective function <span class="math notranslate nohighlight">\(f\)</span>. Given inputs <span class="math notranslate nohighlight">\(X\)</span> and the corresponding noisy observations <span class="math notranslate nohighlight">\(y\)</span>, the model takes the form</p>
 <div class="math notranslate nohighlight">
 \[f\sim\mathrm{MultivariateNormal}(0,k(X,X)),\]</div>
@@ -565,7 +564,7 @@ will guide the query points <span class="math notranslate nohighlight">\(x_n\)</
 \[y\sim f+\epsilon,\]</div>
 <p>where <span class="math notranslate nohighlight">\(\epsilon\)</span> is i.i.d. Gaussian noise and <span class="math notranslate nohighlight">\(k(X,X)\)</span> is a covariance matrix whose entries are given by <span class="math notranslate nohighlight">\(k(x,x^\prime)\)</span> for each pair of inputs <span class="math notranslate nohighlight">\((x,x^\prime)\)</span>.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -576,11 +575,11 @@ will guide the query points <span class="math notranslate nohighlight">\(x_n\)</
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
-<img alt="_images/bo_11_0.svg" src="_images/bo_11_0.svg" /></div>
+<img alt="_images/bo_12_0.svg" src="_images/bo_12_0.svg" /></div>
 </div>
 <p>We choose the <a class="reference external" href="https://en.wikipedia.org/wiki/Mat%C3%A9rn_covariance_function">Matern</a> kernel with <span class="math notranslate nohighlight">\(\nu = \frac{5}{2}\)</span> (as suggested in reference [1]). Note that the popular <a class="reference external" href="https://en.wikipedia.org/wiki/Radial_basis_function_kernel">RBF</a> kernel, which is used in many regression tasks, results in a function prior whose samples are infinitely differentiable; this is probably an unrealistic assumption for most ‘black-box’ objective functions.</p>
 <div class="nbinput nblast docutils container">
@@ -622,7 +621,7 @@ will guide the query points <span class="math notranslate nohighlight">\(x_n\)</
 <p>where <span class="math notranslate nohighlight">\(\mu(x)\)</span> and <span class="math notranslate nohighlight">\(\sigma(x)\)</span> are the mean and square root variance of the posterior at the point <span class="math notranslate nohighlight">\(x\)</span>, and the arbitrary constant <span class="math notranslate nohighlight">\(\kappa&gt;0\)</span> controls the trade-off between exploitation and exploration. This acquisition function will be minimized for choices of <span class="math notranslate nohighlight">\(x\)</span> where either: i) <span class="math notranslate nohighlight">\(\mu(x)\)</span> is small (exploitation); or ii) where <span class="math notranslate nohighlight">\(\sigma(x)\)</span> is large (exploration). A large value of <span class="math notranslate nohighlight">\(\kappa\)</span> means that we place more weight on exploration because we
 prefer candidates <span class="math notranslate nohighlight">\(x\)</span> in areas of high uncertainty. A small value of <span class="math notranslate nohighlight">\(\kappa\)</span> encourages exploitation because we prefer candidates <span class="math notranslate nohighlight">\(x\)</span> that minimize <span class="math notranslate nohighlight">\(\mu(x)\)</span>, which is the mean of our surrogate objective function. We will use <span class="math notranslate nohighlight">\(\kappa=2\)</span>.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -641,7 +640,7 @@ prefer candidates <span class="math notranslate nohighlight">\(x\)</span> in are
 </ul>
 <p>Please refer to reference [2] for a more detailed discussion of this problem in Bayesian Optimization.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -672,7 +671,7 @@ prefer candidates <span class="math notranslate nohighlight">\(x\)</span> in are
 <h2>The inner loop of Bayesian Optimization<a class="headerlink" href="#The-inner-loop-of-Bayesian-Optimization" title="Permalink to this headline">¶</a></h2>
 <p>With the various helper functions defined above, we can now encapsulate the main logic of a single step of Bayesian Optimization in the function <code class="docutils literal notranslate"><span class="pre">next_x</span></code>:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -698,7 +697,7 @@ prefer candidates <span class="math notranslate nohighlight">\(x\)</span> in are
 <h2>Running the algorithm<a class="headerlink" href="#Running-the-algorithm" title="Permalink to this headline">¶</a></h2>
 <p>To illustrate how Bayesian Optimization works, we make a convenient plotting function that will help us visualize our algorithm’s progress.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -733,8 +732,8 @@ prefer candidates <span class="math notranslate nohighlight">\(x\)</span> in are
 </div>
 </div>
 <p>Our surrogate model <code class="docutils literal notranslate"><span class="pre">gpmodel</span></code> already has 4 function evaluations at its disposal; however, we have yet to optimize the GP hyperparameters. So we do that first. Then in a loop we call the <code class="docutils literal notranslate"><span class="pre">next_x</span></code> and <code class="docutils literal notranslate"><span class="pre">update_posterior</span></code> functions repeatedly. The following plot illustrates how Gaussian Process posteriors and the corresponding acquisition functions change at each step in the algorith. Note how query points are chosen both for exploration and exploitation.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -751,18 +750,9 @@ prefer candidates <span class="math notranslate nohighlight">\(x\)</span> in are
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="_images/bo_27_0.png" src="_images/bo_27_0.png" />
-</div>
-</div>
 <p>Because we have assumed that our observations contain noise, it is improbable that we will find the exact minimizer of the function <span class="math notranslate nohighlight">\(f\)</span>. Still, with a relatively small budget of evaluations (8) we see that the algorithm has converged to very close to the global minimum at <span class="math notranslate nohighlight">\(x^* = 0.75725\)</span>.</p>
 <p>While this tutorial is only intended to be a brief introduction to Bayesian Optimization, we hope that we have been able to convey the basic underlying ideas. Consider watching the lecture by Nando de Freitas [3] for an excellent exposition of the basic theory. Finally, the reference paper [2] gives a review of recent research on Bayesian Optimization, together with many discussions about important technical details.</p>
-</div>
-<div class="section" id="参考文献">
-<h2>参考文献<a class="headerlink" href="#参考文献" title="Permalink to this headline">¶</a></h2>
+<p>参考文献</p>
 <p>[1] <code class="docutils literal notranslate"><span class="pre">Practical</span> <span class="pre">bayesian</span> <span class="pre">optimization</span> <span class="pre">of</span> <span class="pre">machine</span> <span class="pre">learning</span> <span class="pre">algorithms</span></code>,     Jasper Snoek, Hugo Larochelle, and Ryan P. Adams</p>
 <p>[2] <code class="docutils literal notranslate"><span class="pre">Taking</span> <span class="pre">the</span> <span class="pre">human</span> <span class="pre">out</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">loop:</span> <span class="pre">A</span> <span class="pre">review</span> <span class="pre">of</span> <span class="pre">bayesian</span> <span class="pre">optimization</span></code>,     Bobak Shahriari, Kevin Swersky, Ziyu Wang, Ryan P. Adams, and Nando De Freitas</p>
 <p>[3] <a class="reference external" href="https://www.youtube.com/watch?v=vz3D36VXefI">Machine learning - Bayesian optimization and multi-armed bandits</a></p>

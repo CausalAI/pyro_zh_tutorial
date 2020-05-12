@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>贝叶斯回归-推断算法(Part 2) &mdash; Pyro Tutorials 编译 1.3.0 documentation</title>
+  <title>贝叶斯回归推断算法(Part II) &mdash; Pyro Tutorials 编译 1.3.0 documentation</title>
   
 
   
@@ -39,7 +39,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="深度马尔可夫模型" href="dmm.html" />
-    <link rel="prev" title="贝叶斯回归-介绍(Part 1)" href="bayesian_regression.html" /> 
+    <link rel="prev" title="贝叶斯回归简介(Part I)" href="bayesian_regression.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -110,8 +110,8 @@
 <p class="caption"><span class="caption-text">Examples:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="vae.html">变分自编码器</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bayesian_regression.html">贝叶斯回归-介绍(Part 1)</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">贝叶斯回归-推断算法(Part 2)</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="bayesian_regression.html">贝叶斯回归简介(Part I)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">贝叶斯回归推断算法(Part II)</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#Model-+-Guide">Model + Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#SVI">SVI</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#HMC">HMC</a></li>
@@ -122,12 +122,12 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="dmm.html">深度马尔可夫模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="air.html">Attend Infer Repeat</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ss-vae.html">半监督 VAE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ss-vae.html">半监督变分自编码器</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stable.html">随机波动率的 Levy 稳定分布模型</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Contributed:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="gmm.html">高斯混合模型</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gmm.html">离散潜变量-高斯混合模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="gp.html">高斯过程</a></li>
 <li class="toctree-l1"><a class="reference internal" href="gplvm.html">高斯过程潜变量模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bo.html">贝叶斯优化</a></li>
@@ -204,7 +204,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>贝叶斯回归-推断算法(Part 2)</li>
+      <li>贝叶斯回归推断算法(Part II)</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -465,8 +465,8 @@ div.rendered_html tbody tr:hover {
     text-align: unset;
 }
 </style>
-<div class="section" id="贝叶斯回归-推断算法(Part-2)">
-<h1>贝叶斯回归-推断算法(Part 2)<a class="headerlink" href="#贝叶斯回归-推断算法(Part-2)" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="贝叶斯回归推断算法(Part-II)">
+<h1>贝叶斯回归推断算法(Part II)<a class="headerlink" href="#贝叶斯回归推断算法(Part-II)" title="Permalink to this headline">¶</a></h1>
 <p>在 <a class="reference internal" href="bayesian_regression.html"><span class="doc">Part I</span></a> 中，我们研究了如何使用SVI在简单的贝叶斯线性回归模型上进行推理。在本教程中，we’ll explore more expressive guides as well as exact inference techniques. 我们将使用与以前相同的数据集。</p>
 <p><strong>贝叶斯线性回归</strong>：我们的目标是再次根据数据集的两个特征预测一个国家的人均 log GDP - whether the nation is in Africa, and its Terrain Ruggedness Index, but we will explore more expressive guides.</p>
 <p>+++++ 学完本文，您将看懂如下代码</p>
@@ -995,7 +995,7 @@ Elbo loss: 249.86634194850922
         <a href="dmm.html" class="btn btn-neutral float-right" title="深度马尔可夫模型" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="bayesian_regression.html" class="btn btn-neutral float-left" title="贝叶斯回归-介绍(Part 1)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="bayesian_regression.html" class="btn btn-neutral float-left" title="贝叶斯回归简介(Part I)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

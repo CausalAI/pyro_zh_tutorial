@@ -39,7 +39,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="高斯过程潜变量模型" href="gplvm.html" />
-    <link rel="prev" title="高斯混合模型" href="gmm.html" /> 
+    <link rel="prev" title="离散潜变量-高斯混合模型" href="gmm.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -110,27 +110,25 @@
 <p class="caption"><span class="caption-text">Examples:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="vae.html">变分自编码器</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bayesian_regression.html">贝叶斯回归-介绍(Part 1)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bayesian_regression_ii.html">贝叶斯回归-推断算法(Part 2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bayesian_regression.html">贝叶斯回归简介(Part I)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bayesian_regression_ii.html">贝叶斯回归推断算法(Part II)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dmm.html">深度马尔可夫模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="air.html">Attend Infer Repeat</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ss-vae.html">半监督 VAE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ss-vae.html">半监督变分自编码器</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stable.html">随机波动率的 Levy 稳定分布模型</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Contributed:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="gmm.html">高斯混合模型</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gmm.html">离散潜变量-高斯混合模型</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">高斯过程</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#数学理解">数学理解</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Imports-and-Data">Imports and Data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#模型定义">模型定义</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Inference">Inference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#数据集">数据集</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#构建模型">构建模型</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#模型推断和训练">模型推断和训练</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#Fit-the-model-using-MAP">Fit the model using MAP</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#Sparse-GPs">Sparse GPs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#More-Sparse-GPs">More Sparse GPs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#参考文献">参考文献</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#稀疏高斯过程">稀疏高斯过程</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="gplvm.html">高斯过程潜变量模型</a></li>
@@ -498,11 +496,11 @@ div.rendered_html tbody tr:hover {
 \[k(x,x') = \sigma^2 \exp\left(-\frac{\|x-x'\|^2}{2l^2}\right).\]</div>
 <p>Here <span class="math notranslate nohighlight">\(\sigma^2\)</span> and <span class="math notranslate nohighlight">\(l\)</span> are parameters that specify the kernel; specifically, <span class="math notranslate nohighlight">\(\sigma^2\)</span> is a variance or amplitude squared and <span class="math notranslate nohighlight">\(l\)</span> is a lengthscale. We’ll get some intuition for these parameters below.</p>
 </div>
-<div class="section" id="Imports-and-Data">
-<h2>Imports and Data<a class="headerlink" href="#Imports-and-Data" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="数据集">
+<h2>数据集<a class="headerlink" href="#数据集" title="Permalink to this headline">¶</a></h2>
 <p>First, we import necessary modules.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -523,7 +521,7 @@ div.rendered_html tbody tr:hover {
 </div>
 <p>Throughout the tutorial we’ll want to visualize GPs. So we define a helper function for plotting:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -571,7 +569,7 @@ div.rendered_html tbody tr:hover {
 \[y = 0.5\sin(3x) + \epsilon, \quad \epsilon \sim \mathcal{N}(0, 0.2).\]</div>
 <p>with <span class="math notranslate nohighlight">\(x\)</span> sampled uniformly from the interval <span class="math notranslate nohighlight">\([0, 5]\)</span>.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -591,11 +589,11 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 </div>
-<div class="section" id="模型定义">
-<h2>模型定义<a class="headerlink" href="#模型定义" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="构建模型">
+<h2>构建模型<a class="headerlink" href="#构建模型" title="Permalink to this headline">¶</a></h2>
 <p>First we define a RBF kernel, specifying the values of the two hyperparameters <code class="docutils literal notranslate"><span class="pre">variance</span></code> and <code class="docutils literal notranslate"><span class="pre">lengthscale</span></code>. Then we construct a <code class="docutils literal notranslate"><span class="pre">GPRegression</span></code> object. Here we feed in another hyperparameter, <code class="docutils literal notranslate"><span class="pre">noise</span></code>, that corresponds to <span class="math notranslate nohighlight">\(\epsilon\)</span> above.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -629,8 +627,8 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 </div>
-<div class="section" id="Inference">
-<h2>Inference<a class="headerlink" href="#Inference" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="模型推断和训练">
+<h2>模型推断和训练<a class="headerlink" href="#模型推断和训练" title="Permalink to this headline">¶</a></h2>
 <p>In the above we set the kernel hyperparameters by hand. If we want to learn the hyperparameters from the data, we need to do inference. In the simplest (conjugate) case we do gradient ascent on the log marginal likelihood. In <code class="docutils literal notranslate"><span class="pre">pyro.contrib.gp</span></code>, we can use any <a class="reference external" href="https://pytorch.org/docs/stable/optim.html">PyTorch optimizer</a> to optimize parameters of a model. In addition, we need a loss function which takes inputs are the pair model and guide and returns an ELBO loss (see <a class="reference internal" href="svi_part_i.html"><span class="doc">SVI Part
 I</span></a> tutorial).</p>
 <div class="nbinput docutils container">
@@ -844,8 +842,8 @@ noise = 0.04222287982702255
 <p>Note that the MAP values are different from the MLE values due to the prior.</p>
 </div>
 </div>
-<div class="section" id="Sparse-GPs">
-<h2>Sparse GPs<a class="headerlink" href="#Sparse-GPs" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="稀疏高斯过程">
+<h2>稀疏高斯过程<a class="headerlink" href="#稀疏高斯过程" title="Permalink to this headline">¶</a></h2>
 <p>For large datasets computing the log marginal likelihood is costly due to the expensive matrix operations involved (e.g. see Section 2.2 of [1]). A variety of so-called ‘sparse’ variational methods have been developed to make GPs viable for larger datasets. This is a big area of research and we won’t be going into all the details. Instead we quickly show how we can use <code class="docutils literal notranslate"><span class="pre">SparseGPRegression</span></code> in <code class="docutils literal notranslate"><span class="pre">pyro.contrib.gp</span></code> to make use of these methods.</p>
 <p>First, we generate more data.</p>
 <div class="nbinput docutils container">
@@ -942,9 +940,9 @@ inducing points:
 <li><p>“VFE” (Variational Free Energy)</p></li>
 </ul>
 <p>By default, <code class="docutils literal notranslate"><span class="pre">SparseGPRegression</span></code> will use “VFE” as the inference method. We can use other methods by passing a different <code class="docutils literal notranslate"><span class="pre">approx</span></code> flag to <code class="docutils literal notranslate"><span class="pre">SparseGPRegression</span></code>.</p>
-</div>
-<div class="section" id="More-Sparse-GPs">
-<h2>More Sparse GPs<a class="headerlink" href="#More-Sparse-GPs" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p>More Sparse GPs</p>
+</div></blockquote>
 <p>Both <code class="docutils literal notranslate"><span class="pre">GPRegression</span></code> and <code class="docutils literal notranslate"><span class="pre">SparseGPRegression</span></code> above are limited to Gaussian likelihoods. We can use other likelihoods with GPs—for example, we can use the Bernoulli likelihood for classification problems—but the inference problem becomes more difficult. In this section, we show how to use the <code class="docutils literal notranslate"><span class="pre">VariationalSparseGP</span></code> module, which can handle non-Gaussian likelihoods. So we can compare to what we’ve done above, we’re still going to use a Gaussian likelihood. The point is that the inference
 that’s being done under the hood can support other likelihoods.</p>
 <div class="nbinput docutils container">
@@ -994,9 +992,9 @@ that’s being done under the hood can support other likelihoods.</p>
 </div>
 </div>
 <p>That’s all there is to it. For more details on the <code class="docutils literal notranslate"><span class="pre">pyro.contrib.gp</span></code> module see the <a class="reference external" href="http://docs.pyro.ai/en/dev/contrib/gp.html">docs</a>. And for example code that uses a GP for classification see <a class="reference external" href="https://github.com/pyro-ppl/pyro/blob/dev/examples/contrib/gp/sv-dkl.py">here</a>.</p>
-</div>
-<div class="section" id="参考文献">
-<h2>参考文献<a class="headerlink" href="#参考文献" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p>参考文献</p>
+</div></blockquote>
 <p>[1] <code class="docutils literal notranslate"><span class="pre">Deep</span> <span class="pre">Gaussian</span> <span class="pre">processes</span> <span class="pre">and</span> <span class="pre">variational</span> <span class="pre">propagation</span> <span class="pre">of</span> <span class="pre">uncertainty</span></code>,     Andreas Damianou</p>
 <p>[2] <code class="docutils literal notranslate"><span class="pre">A</span> <span class="pre">unifying</span> <span class="pre">framework</span> <span class="pre">for</span> <span class="pre">sparse</span> <span class="pre">Gaussian</span> <span class="pre">process</span> <span class="pre">approximation</span> <span class="pre">using</span> <span class="pre">power</span> <span class="pre">expectation</span> <span class="pre">propagation</span></code>,     Thang D. Bui, Josiah Yan, and Richard E. Turner</p>
 <p>[3] <code class="docutils literal notranslate"><span class="pre">Scalable</span> <span class="pre">variational</span> <span class="pre">Gaussian</span> <span class="pre">process</span> <span class="pre">classification</span></code>,     James Hensman, Alexander G. de G. Matthews, and Zoubin Ghahramani</p>
@@ -1016,7 +1014,7 @@ that’s being done under the hood can support other likelihoods.</p>
         <a href="gplvm.html" class="btn btn-neutral float-right" title="高斯过程潜变量模型" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="gmm.html" class="btn btn-neutral float-left" title="高斯混合模型" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="gmm.html" class="btn btn-neutral float-left" title="离散潜变量-高斯混合模型" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

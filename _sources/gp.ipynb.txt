@@ -87,7 +87,7 @@
     "Collapsed": "false"
    },
    "source": [
-    "## Imports and Data"
+    "## 数据集"
    ]
   },
   {
@@ -101,7 +101,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 2,
+   "execution_count": 1,
    "metadata": {
     "Collapsed": "false"
    },
@@ -132,7 +132,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 3,
+   "execution_count": 2,
    "metadata": {
     "Collapsed": "false"
    },
@@ -191,7 +191,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 4,
+   "execution_count": 3,
    "metadata": {
     "Collapsed": "false"
    },
@@ -223,14 +223,14 @@
     "Collapsed": "false"
    },
    "source": [
-    "## 模型定义\n",
+    "## 构建模型\n",
     "\n",
     "First we define a RBF kernel, specifying the values of the two hyperparameters `variance` and `lengthscale`. Then we construct a `GPRegression` object. Here we feed in another hyperparameter, `noise`, that corresponds to $\\epsilon$ above."
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 5,
+   "execution_count": 4,
    "metadata": {
     "Collapsed": "false"
    },
@@ -290,7 +290,7 @@
     "Collapsed": "false"
    },
    "source": [
-    "## Inference\n",
+    "## 模型推断和训练\n",
     "\n",
     "In the above we set the kernel hyperparameters by hand. If we want to learn the hyperparameters from the data, we need to do inference. In the simplest (conjugate) case we do gradient ascent on the log marginal likelihood. In `pyro.contrib.gp`, we can use any [PyTorch optimizer](https://pytorch.org/docs/stable/optim.html) to optimize parameters of a model. In addition, we need a loss function which takes inputs are the pair model and guide and returns an ELBO loss (see [SVI Part I](svi_part_i.ipynb) tutorial)."
    ]
@@ -299,7 +299,11 @@
    "cell_type": "code",
    "execution_count": 1,
    "metadata": {
-    "Collapsed": "false"
+    "Collapsed": "false",
+    "collapsed": true,
+    "jupyter": {
+     "outputs_hidden": true
+    }
    },
    "outputs": [
     {
@@ -608,7 +612,7 @@
     "Collapsed": "false"
    },
    "source": [
-    "## Sparse GPs\n",
+    "## 稀疏高斯过程\n",
     "\n",
     "For large datasets computing the log marginal likelihood is costly due to the expensive matrix operations involved (e.g. see Section 2.2 of [1]). A variety of so-called 'sparse' variational methods have been developed to make GPs viable for larger datasets. This is a big area of research and we won't be going into all the details. Instead we quickly show how we can use `SparseGPRegression` in `pyro.contrib.gp` to make use of these methods.\n",
     "\n",
@@ -756,7 +760,7 @@
     "Collapsed": "false"
    },
    "source": [
-    "## More Sparse GPs"
+    "<big> More Sparse GPs </big>"
    ]
   },
   {
@@ -845,7 +849,7 @@
     "Collapsed": "false"
    },
    "source": [
-    "## 参考文献\n",
+    "<big> 参考文献 </big>\n",
     "\n",
     "[1] `Deep Gaussian processes and variational propagation of uncertainty`,<br />&nbsp;&nbsp;&nbsp;&nbsp;\n",
     "Andreas Damianou\n",

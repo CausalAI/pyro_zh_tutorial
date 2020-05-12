@@ -6,7 +6,7 @@
     "Collapsed": "false"
    },
    "source": [
-    "# 贝叶斯回归-推断算法(Part 2)"
+    "# 贝叶斯回归推断算法(Part II)"
    ]
   },
   {

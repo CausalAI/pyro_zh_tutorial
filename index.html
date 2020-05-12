@@ -109,16 +109,16 @@
 <p class="caption"><span class="caption-text">Examples:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="vae.html">变分自编码器</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bayesian_regression.html">贝叶斯回归-介绍(Part 1)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bayesian_regression_ii.html">贝叶斯回归-推断算法(Part 2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bayesian_regression.html">贝叶斯回归简介(Part I)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bayesian_regression_ii.html">贝叶斯回归推断算法(Part II)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dmm.html">深度马尔可夫模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="air.html">Attend Infer Repeat</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ss-vae.html">半监督 VAE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ss-vae.html">半监督变分自编码器</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stable.html">随机波动率的 Levy 稳定分布模型</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Contributed:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="gmm.html">高斯混合模型</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gmm.html">离散潜变量-高斯混合模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="gp.html">高斯过程</a></li>
 <li class="toctree-l1"><a class="reference internal" href="gplvm.html">高斯过程潜变量模型</a></li>
 <li class="toctree-l1"><a class="reference internal" href="bo.html">贝叶斯优化</a></li>
@@ -283,6 +283,7 @@
 <li class="toctree-l2"><a class="reference internal" href="svi_part_ii.html#Pyro-申明条件独立">Pyro 申明条件独立</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_ii.html#子采样">子采样</a></li>
 <li class="toctree-l2"><a class="reference internal" href="svi_part_ii.html#Amortization">Amortization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="svi_part_ii.html#变分自编码">变分自编码</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_iii.html">SVI Part III: ELBO 梯度估计</a><ul>
@@ -352,7 +353,7 @@
 <li class="toctree-l2"><a class="reference internal" href="vae.html#Code-and-Sample-results">Code and Sample results</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="bayesian_regression.html">贝叶斯回归-介绍(Part 1)</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="bayesian_regression.html">贝叶斯回归简介(Part I)</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="bayesian_regression.html#Setup">Setup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bayesian_regression.html#线性回归">线性回归</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bayesian_regression.html#使用-SVI-做贝叶斯回归">使用 SVI 做贝叶斯回归</a></li>
@@ -360,7 +361,7 @@
 <li class="toctree-l2"><a class="reference internal" href="bayesian_regression.html#Model-Serving-via-TorchScript">Model Serving via TorchScript</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="bayesian_regression_ii.html">贝叶斯回归-推断算法(Part 2)</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="bayesian_regression_ii.html">贝叶斯回归推断算法(Part II)</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="bayesian_regression_ii.html#Model-+-Guide">Model + Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bayesian_regression_ii.html#SVI">SVI</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bayesian_regression_ii.html#HMC">HMC</a></li>
@@ -378,25 +379,22 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="air.html">Attend Infer Repeat</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="air.html#Introduction">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="air.html#Model">Model</a></li>
-<li class="toctree-l2"><a class="reference internal" href="air.html#Guide">Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="air.html#Multi-mnist-数据集的生成模型">Multi-mnist 数据集的生成模型</a></li>
+<li class="toctree-l2"><a class="reference internal" href="air.html#模型分布">模型分布</a></li>
+<li class="toctree-l2"><a class="reference internal" href="air.html#指导分布">指导分布</a></li>
 <li class="toctree-l2"><a class="reference internal" href="air.html#Inference">Inference</a></li>
 <li class="toctree-l2"><a class="reference internal" href="air.html#Results">Results</a></li>
 <li class="toctree-l2"><a class="reference internal" href="air.html#In-practice">In practice</a></li>
-<li class="toctree-l2"><a class="reference internal" href="air.html#参考文献">参考文献</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="ss-vae.html">半监督 VAE</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ss-vae.html#Introduction">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ss-vae.html#The-Challenges-of-Inference">The Challenges of Inference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ss-vae.html#First-Variant:-Standard-objective-function,-naive-estimator">First Variant: Standard objective function, naive estimator</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ss-vae.html#Interlude:-Summing-Out-Discrete-Latents">Interlude: Summing Out Discrete Latents</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ss-vae.html#Second-Variant:-Standard-Objective-Function,-Better-Estimator">Second Variant: Standard Objective Function, Better Estimator</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ss-vae.html#Third-Variant:-Adding-a-Term-to-the-Objective">Third Variant: Adding a Term to the Objective</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ss-vae.html#Results">Results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ss-vae.html">半监督变分自编码器</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ss-vae.html#半监督VAE简介">半监督VAE简介</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ss-vae.html#推断中的挑战">推断中的挑战</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ss-vae.html#思路一：标准目标函数，直接估计">思路一：标准目标函数，直接估计</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ss-vae.html#思路二：标准目标函数，改进-estimator">思路二：标准目标函数，改进 estimator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ss-vae.html#思路三：改进目标函数">思路三：改进目标函数</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ss-vae.html#总结">总结</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ss-vae.html#Final-thoughts">Final thoughts</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ss-vae.html#参考文献">参考文献</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="stable.html">随机波动率的 Levy 稳定分布模型</a><ul>
@@ -409,7 +407,7 @@
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Contributed:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="gmm.html">高斯混合模型</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="gmm.html">离散潜变量-高斯混合模型</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="gmm.html#Overview">Overview</a></li>
 <li class="toctree-l2"><a class="reference internal" href="gmm.html#Training-a-MAP-estimator">Training a MAP estimator</a></li>
 <li class="toctree-l2"><a class="reference internal" href="gmm.html#Serving-the-model:-predicting-membership">Serving the model: predicting membership</a></li>
@@ -418,12 +416,10 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="gp.html">高斯过程</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="gp.html#数学理解">数学理解</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gp.html#Imports-and-Data">Imports and Data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gp.html#模型定义">模型定义</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gp.html#Inference">Inference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gp.html#Sparse-GPs">Sparse GPs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gp.html#More-Sparse-GPs">More Sparse GPs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gp.html#参考文献">参考文献</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gp.html#数据集">数据集</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gp.html#构建模型">构建模型</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gp.html#模型推断和训练">模型推断和训练</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gp.html#稀疏高斯过程">稀疏高斯过程</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="gplvm.html">高斯过程潜变量模型</a><ul>
@@ -437,12 +433,11 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="bo.html">贝叶斯优化</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="bo.html#Problem-Setup">Problem Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="bo.html#Define-an-objective-function">Define an objective function</a></li>
-<li class="toctree-l2"><a class="reference internal" href="bo.html#Setting-a-Gaussian-Process-prior">Setting a Gaussian Process prior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bo.html#目标函数">目标函数</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bo.html#高斯过程先验">高斯过程先验</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bo.html#Define-an-acquisition-function">Define an acquisition function</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bo.html#The-inner-loop-of-Bayesian-Optimization">The inner loop of Bayesian Optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bo.html#Running-the-algorithm">Running the algorithm</a></li>
-<li class="toctree-l2"><a class="reference internal" href="bo.html#参考文献">参考文献</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="easyguide.html">用 EasyGuide 构建 guides</a><ul>
