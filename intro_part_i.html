@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Pyro 模型介绍 &mdash; Pyro Tutorials 编译 1.3.0 documentation</title>
+  <title>Pyro 模型介绍 &mdash; Pyro Tutorials 编译 Pyro官方教程汉化0.0 documentation</title>
   
 
   
@@ -66,7 +66,7 @@
             
             
               <div class="version">
-                1.3.0
+                Pyro官方教程汉化0.0
               </div>
             
           
@@ -498,7 +498,7 @@ div.rendered_html tbody tr:hover {
 <p>初等随机函数(Primitive stochastic functions, or distributions) 是一类重要的随机函数，我们可以为其显式计算某个输入下得到某个输出的概率. As of PyTorch 0.4 and Pyro 0.2, Pyro uses PyTorch’s <a class="reference external" href="http://pytorch.org/docs/master/distributions.html">distribution library</a>. You can also create custom distributions using <a class="reference external" href="http://pytorch.org/docs/master/distributions.html#module-torch.distributions.transforms">transforms</a>.</p>
 <p>使用初等随机函数很简单. 例如, 我们可以使用如下代码从标准正态分布 <span class="math notranslate nohighlight">\(\mathcal{N}(0,1)\)</span> 抽取一个样本:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -516,18 +516,18 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-sample tensor(-1.3905)
-log prob tensor(-1.8857)
+sample tensor(-0.8152)
+log prob tensor(-1.2512)
 </pre></div></div>
 </div>
-<p>Here, <code class="docutils literal notranslate"><span class="pre">torch.distributions.Normal</span></code> is an instance of the <code class="docutils literal notranslate"><span class="pre">Distribution</span></code> class that takes parameters and provides <strong>sample and score methods</strong>. 因为 Pyro’s 的分布库 <code class="docutils literal notranslate"><span class="pre">pyro.distributions</span></code> 是 Pytorch 分布库 <code class="docutils literal notranslate"><span class="pre">torch.distributions</span></code> 的一个简单打包，所以我们可以在推断过程中利用 PyTorch’s 快速张量计算和自动微分的能力.</p>
+<p>这里, <code class="docutils literal notranslate"><span class="pre">torch.distributions.Normal</span></code> 是 <code class="docutils literal notranslate"><span class="pre">Distribution</span></code> class 的一个实例 that takes parameters and provides <strong>sample and score methods</strong>. 因为 Pyro’s 的分布库 <code class="docutils literal notranslate"><span class="pre">pyro.distributions</span></code> 是 Pytorch 分布库 <code class="docutils literal notranslate"><span class="pre">torch.distributions</span></code> 的一个简单打包，所以我们可以在推断过程中利用 PyTorch’s 快速张量计算和自动微分的能力.</p>
 </div>
 <div class="section" id="一个简单模型">
 <h2>一个简单模型<a class="headerlink" href="#一个简单模型" title="Permalink to this headline">¶</a></h2>
 <p>所有的概率程序(probablistic programs)是通过初等随机函数和确定性计算组合得到的。我们最终的目的是要是用概率编程(probablistic programming)来模拟真实世界，我们现在从一个具体的例子出发。</p>
 <p>现在我们有一堆关于每天平均气温和是否阴天(cloud cover)的数据。我们想 reason about how temperature interacts with whether it was sunny or cloudy. 如下的简单随机函数描述了数据的生成过程：</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -537,14 +537,14 @@ log prob tensor(-1.8857)
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <img alt="_images/intro_part_i_9_0.svg" src="_images/intro_part_i_9_0.svg" /></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -566,14 +566,14 @@ log prob tensor(-1.8857)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-(&#39;cloudy&#39;, 46.847618103027344)
+(&#39;sunny&#39;, 84.04940032958984)
 </pre></div></div>
 </div>
 <p>让我们一行行的来看这段代码。 首先, 在第2行 we define a binary random variable ‘cloudy’, which is given by a draw from the Bernoulli distribution with a parameter of <code class="docutils literal notranslate"><span class="pre">0.3</span></code>. Since the Bernoulli distributions return <code class="docutils literal notranslate"><span class="pre">0</span></code>s or <code class="docutils literal notranslate"><span class="pre">1</span></code>s, 在第3行 we convert the value <code class="docutils literal notranslate"><span class="pre">cloudy</span></code> to a string so that return values of <code class="docutils literal notranslate"><span class="pre">weather</span></code> are easier to parse. So according to this model 30% of the time it’s cloudy and 70% of the time it’s sunny.</p>
 <p>在第4-5行 we define the parameters we’re going to use to sample the temperature in lines 6. These parameters depend on the particular value of <code class="docutils literal notranslate"><span class="pre">cloudy</span></code> we sampled in line 2. For example, the mean temperature is 55 degrees (Fahrenheit) on cloudy days and 75 degrees on sunny days. Finally we return the two values <code class="docutils literal notranslate"><span class="pre">cloudy</span></code> and <code class="docutils literal notranslate"><span class="pre">temp</span></code> in line 7.</p>
 <p>但是，这个函数 <code class="docutils literal notranslate"><span class="pre">weather</span></code> 完全与 Pyro 无关 - it only calls PyTorch. 我们需要将其转换为 Pyro 程序 if we want to use this model for anything other than sampling fake data. (那么，这个模型除生成假数据还应该能干嘛呢？我们希望 can be composed, reused, imported, and serialized.)</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -591,12 +591,12 @@ log prob tensor(-1.8857)
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-(&#39;cloudy&#39;, 46.847618103027344)
+(&#39;sunny&#39;, 92.53456115722656)
 </pre></div></div>
 </div>
 </div>
@@ -604,7 +604,7 @@ log prob tensor(-1.8857)
 <h2><code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> 原语<a class="headerlink" href="#pyro.sample-原语" title="Permalink to this headline">¶</a></h2>
 <p>为了将 <code class="docutils literal notranslate"><span class="pre">weather</span></code> 转换为 Pyro 程序, 我们将会用 <code class="docutils literal notranslate"><span class="pre">pyro.distribution</span></code> 替代<code class="docutils literal notranslate"><span class="pre">torch.distribution</span></code>s， 而且用 calls to <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> 来替代 calls to <code class="docutils literal notranslate"><span class="pre">.sample()</span></code> and <code class="docutils literal notranslate"><span class="pre">.rsample()</span></code>. 使用 <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> 就像调用初等随机函数一样简单，但是有一个重要的区别:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -619,7 +619,7 @@ log prob tensor(-1.8857)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-tensor(1.2917)
+tensor(1.0920)
 </pre></div></div>
 </div>
 <p>就像 <code class="docutils literal notranslate"><span class="pre">torch.distributions.Normal().rsample()</span></code> 一样, 它返回一个标准正态分布的样本。但是最关键的区别是该样本是有 <strong>names</strong> 的. Pyro的后端使用这些 <strong>names</strong></p>
@@ -630,7 +630,7 @@ tensor(1.2917)
 <p>正如我们将看到的，这就是 Pyro 如何实现 various manipulations that underlie inference algorithms.</p>
 <p>我们已经介绍了 <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> 和 <code class="docutils literal notranslate"><span class="pre">pyro.distributions</span></code>，现在我们可以将我们的简单模型重写为Pyro程序：</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -652,36 +652,32 @@ tensor(1.2917)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-(&#39;cloudy&#39;, 51.373016357421875)
-(&#39;cloudy&#39;, 52.28388595581055)
-(&#39;sunny&#39;, 70.28937530517578)
+(&#39;sunny&#39;, 88.48491668701172)
+(&#39;sunny&#39;, 66.36395263671875)
+(&#39;cloudy&#39;, 61.69258117675781)
 </pre></div></div>
 </div>
 <p>Procedurally，<code class="docutils literal notranslate"><span class="pre">weather()</span></code> 仍然是一个non-deterministic Python callable that returns two random samples. Because the randomness is now invoked with <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code>, however, 它远不止于此。具体来说，<code class="docutils literal notranslate"><span class="pre">weather()</span></code> 定义了两个有名字的随机变量的联合分布: <code class="docutils literal notranslate"><span class="pre">cloudy</span></code> 和 <code class="docutils literal notranslate"><span class="pre">temp</span></code>. 也就是说我们定义了一个可以用于推理的概率模型 using the techniques of probability theory. 例如，我们可能会问：如果我观察到70度的温度，多云的可能性有多大？下一个教程将讨论如何提出和回答这类问题。</p>
 <p>一个重要的问题是：Pyro 后段如何通过名字查看对应的随机变量和样本呢？</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[135]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">pyro.poutine</span> <span class="k">as</span> <span class="nn">poutine</span>
 <span class="kn">import</span> <span class="nn">pyro.distributions</span> <span class="k">as</span> <span class="nn">dist</span>
 <span class="kn">from</span> <span class="nn">pyro.poutine.trace_messenger</span> <span class="k">import</span> <span class="n">TraceMessenger</span>
-<span class="kn">from</span> <span class="nn">pyro.poutine.condition_messenger</span> <span class="k">import</span> <span class="n">ConditionMessenger</span>
 
 <span class="n">cond_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;temp&quot;</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mi">52</span><span class="p">)}</span>
 
 <span class="k">with</span> <span class="n">TraceMessenger</span><span class="p">()</span> <span class="k">as</span> <span class="n">tracer</span><span class="p">:</span>
-    <span class="k">with</span> <span class="n">ConditionMessenger</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">cond_data</span><span class="p">):</span>
-        <span class="n">weather</span><span class="p">()</span>
+    <span class="n">weather</span><span class="p">()</span>
 
 <span class="n">trace</span> <span class="o">=</span> <span class="n">tracer</span><span class="o">.</span><span class="n">trace</span>
 <span class="n">logp</span> <span class="o">=</span> <span class="mf">0.</span>
 <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">trace</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">node</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">node</span><span class="p">[</span><span class="s1">&#39;fn&#39;</span><span class="p">],</span> <span class="n">node</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">])</span>
     <span class="k">if</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;sample&quot;</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;is_observed&quot;</span><span class="p">]:</span>
-            <span class="k">assert</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="n">cond_data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
         <span class="n">logp</span> <span class="o">=</span> <span class="n">logp</span> <span class="o">+</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;fn&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">node</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -691,18 +687,49 @@ tensor(1.2917)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-cloudy {&#39;type&#39;: &#39;sample&#39;, &#39;name&#39;: &#39;cloudy&#39;, &#39;fn&#39;: Bernoulli(probs: 0.30000001192092896), &#39;is_observed&#39;: False, &#39;args&#39;: (), &#39;kwargs&#39;: {}, &#39;value&#39;: tensor(0.), &#39;infer&#39;: {}, &#39;scale&#39;: 1.0, &#39;mask&#39;: None, &#39;cond_indep_stack&#39;: (), &#39;done&#39;: True, &#39;stop&#39;: False, &#39;continuation&#39;: None}
-temp {&#39;type&#39;: &#39;sample&#39;, &#39;name&#39;: &#39;temp&#39;, &#39;fn&#39;: Normal(loc: 75.0, scale: 15.0), &#39;is_observed&#39;: True, &#39;args&#39;: (), &#39;kwargs&#39;: {}, &#39;value&#39;: tensor(52), &#39;infer&#39;: {}, &#39;scale&#39;: 1.0, &#39;mask&#39;: None, &#39;cond_indep_stack&#39;: (), &#39;done&#39;: True, &#39;stop&#39;: False, &#39;continuation&#39;: None}
+cloudy Bernoulli(probs: 0.30000001192092896) tensor(1.)
+temp Normal(loc: 55.0, scale: 10.0) tensor(74.8488)
 </pre></div></div>
 </div>
 <p><strong>思考</strong>：同样的问题是，如何查看和使用模型分布和指导分布的参数呢？如自定义目标函数呢？如何化解成最原始的梯度下降法？</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">node</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+{&#39;type&#39;: &#39;sample&#39;,
+ &#39;name&#39;: &#39;temp&#39;,
+ &#39;fn&#39;: Normal(loc: 55.0, scale: 10.0),
+ &#39;is_observed&#39;: False,
+ &#39;args&#39;: (),
+ &#39;kwargs&#39;: {},
+ &#39;value&#39;: tensor(74.8488),
+ &#39;infer&#39;: {},
+ &#39;scale&#39;: 1.0,
+ &#39;mask&#39;: None,
+ &#39;cond_indep_stack&#39;: (),
+ &#39;done&#39;: True,
+ &#39;stop&#39;: False,
+ &#39;continuation&#39;: None}
+</pre></div></div>
+</div>
 </div>
 <div class="section" id="通用概率编程">
 <h2>通用概率编程<a class="headerlink" href="#通用概率编程" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p>Universality: Stochastic Recursion, Higher-order Stochastic Functions, and Random Control Flow</p></li>
 </ul>
-<p>现在我们已经看到了如何定义一个简单的模型。Building off of it is easy. For example:</p>
+<p>现在我们已经看到了如何定义一个简单的随机函数。建立起来很容易，例如：</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
@@ -718,10 +745,10 @@ temp {&#39;type&#39;: &#39;sample&#39;, &#39;name&#39;: &#39;temp&#39;, &#39;fn&
 </pre></div>
 </div>
 </div>
-<p>(这种模块化是非常强大的) This kind of modularity, familiar to any programmer, is obviously very powerful. 但是它强大到足以包含我们想要表达的所有不同类型的模型吗？</p>
+<p>这种模块化显然是非常强大的，但是它强大到足以包含我们想要表达的所有不同类型的随机函数吗？</p>
 <p>It turns out that because Pyro is embedded in Python, stochastic functions can contain arbitrarily complex deterministic Python and randomness can freely affect control flow. 例如，我们可以构造递归函数 that terminate their recursion nondeterministically, provided we take care to pass <code class="docutils literal notranslate"><span class="pre">pyro.sample</span></code> unique sample names whenever it’s called. 例如我们可以定义一个几何分布，来计算直到第一次成功之前的失败次数，如下所示：</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[501]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -744,10 +771,10 @@ temp {&#39;type&#39;: &#39;sample&#39;, &#39;name&#39;: &#39;temp&#39;, &#39;fn&
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-13
+12
 </pre></div></div>
 </div>
-<p>Note that the names <code class="docutils literal notranslate"><span class="pre">x_0</span></code>, <code class="docutils literal notranslate"><span class="pre">x_1</span></code>, etc., in <code class="docutils literal notranslate"><span class="pre">geometric()</span></code> are generated dynamically and that different executions can have different numbers of named random variables.</p>
+<p>Note that the names <code class="docutils literal notranslate"><span class="pre">x_0</span></code>, <code class="docutils literal notranslate"><span class="pre">x_1</span></code>, etc., in <code class="docutils literal notranslate"><span class="pre">geometric()</span></code> 是动态生成的，并且不同的执行可以具有不同数量的 named 随机变量。</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[535]:
 </pre></div>
@@ -795,24 +822,41 @@ tensor(-2.0794)
 </div>
 <p>我们也可以定义把其他随机函数当成输入或者输出的随机函数：</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[39]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">graphviz</span> <span class="k">import</span> <span class="n">Source</span>
-<span class="n">Source</span><span class="p">(</span><span class="s1">&#39;digraph{rankdir=LR; loc, scale -&gt; z1, z2 -&gt; y; mu_latent -&gt; loc}&#39;</span><span class="p">)</span>
+<span class="n">Source</span><span class="p">(</span><span class="s1">&#39;digraph{rankdir=LR; loc, scale -&gt; z1, z2 -&gt; y}&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[39]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
-<img alt="_images/intro_part_i_29_0.svg" src="_images/intro_part_i_29_0.svg" /></div>
+<img alt="_images/intro_part_i_30_0.svg" src="_images/intro_part_i_30_0.svg" /></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[43]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">graphviz</span> <span class="k">import</span> <span class="n">Source</span>
+<span class="n">Source</span><span class="p">(</span><span class="s1">&#39;digraph{rankdir=LR; mu_latent -&gt; loc -&gt; fn; scale, fn -&gt; y}&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[43]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<img alt="_images/intro_part_i_31_0.svg" src="_images/intro_part_i_31_0.svg" /></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[44]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -838,15 +882,15 @@ tensor(-2.0794)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-tensor(-0.2582)
+tensor(0.7166)
 </pre></div></div>
 </div>
 <p>这里 <code class="docutils literal notranslate"><span class="pre">make_normal_normal()</span></code> 是一个参数为 ‘scale’ 的随机函数，在其执行过程中，产生了三个有名字的随机变量。</p>
-<p>The fact that Pyro supports arbitrary Python code like this—iteration, recursion, higher-order functions, etc.—in conjuction with random control flow 意味着 Pyro 随机函数是通用概率编程语言 (Universal Probabilistic Programming) ，即它们可用于表示任何可计算的概率分布。 正如我们将在后续教程中看到的那样，它难以置信的强大。</p>
+<p>Pyro 支持任意的 Python code— 包括iteration, recursion, higher-order functions, etc，结合随机控制流程，意味着 Pyro 随机函数是通用概率编程语言 (Universal Probabilistic Programming) ，即它们可用于表示任何可计算的概率分布。 正如我们将在后续教程中看到的那样，它难以置信的强大。</p>
 </div>
 <div class="section" id="下一步？">
 <h2>下一步？<a class="headerlink" href="#下一步？" title="Permalink to this headline">¶</a></h2>
-<p>我们已经展示了如何使用随机函数和初等随机函数(primitive distributions)来表示 Pyro中的模型。为了从数据中学习模型并对其进行推理，我们需要 be able to do inference. This is the subject of the <a class="reference internal" href="intro_part_ii.html"><span class="doc">next tutorial</span></a>.</p>
+<p>我们已经展示了如何使用随机函数和初等随机函数(primitive distributions)来表示 Pyro中的模型。为了从数据中学习模型并对其进行推理，我们需要能够进行推断， 这是 <a class="reference internal" href="intro_part_ii.html"><span class="doc">下一个 tutorial</span></a> 的主体。</p>
 </div>
 </div>
 

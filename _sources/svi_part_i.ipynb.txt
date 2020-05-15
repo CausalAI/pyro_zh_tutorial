@@ -20,17 +20,17 @@
    "source": [
     "**Table of Contents**\n",
     "\n",
-    "- [SVI数学基础](#SVI数学基础)\n",
-    "- [近似后验的guide](#近似后验的guide)\n",
+    "- [SVI数学基础简介](#SVI数学基础简介)\n",
+    "- [指导分布](#指导分布)\n",
     "- [目标函数ELBO](#目标函数ELBO)\n",
     "- [SVI Class](#SVI-类)\n",
     "- [优化器](#optimizers)\n",
-    "- [端对端例子](#端对端例子)"
+    "- [端对端掷硬币例子](#掷硬币例子)"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 4,
+   "execution_count": 1,
    "metadata": {
     "Collapsed": "false"
    },
@@ -40,7 +40,7 @@
      "output_type": "stream",
      "text": [
       "........................................\n",
-      "based on the data and our prior belief, the fairness of the coin is 0.537 +- 0.090\n"
+      "based on the data and our prior belief, the fairness of the coin is 0.532 +- 0.090\n"
      ]
     }
    ],
@@ -96,7 +96,7 @@
     "Collapsed": "false"
    },
    "source": [
-    "## 数学基础"
+    "## SVI数学基础简介"
    ]
   },
   {
@@ -161,7 +161,7 @@
     "$$ p_{\\theta_{\\rm{max}}}({\\bf z} | {\\bf x}) = \\frac{p_{\\theta_{\\rm{max}}}({\\bf x} , {\\bf z})}{\n",
     "\\int_{\\bf z} \\! \\; p_{\\theta_{\\rm{max}}}({\\bf x} , {\\bf z})d{\\bf z} } $$\n",
     "\n",
-    "请注意，此表达式的分母 is the evidence(通常不可计算). 变分推断提供一种方案用于求解$\\theta_{\\rm{max}}$ 和计算一个近似后验分布 $p_{\\theta_{\\rm{max}}}({\\bf z} | {\\bf x})$. \n",
+    "请注意，此表达式的分母就是 evidence(通常不可计算). 变分推断提供一种方案用于求解$\\theta_{\\rm{max}}$ 和计算一个近似后验分布 $p_{\\theta_{\\rm{max}}}({\\bf z} | {\\bf x})$. \n",
     "\n",
     "总的来说，我们使用极大似然估计去求的 $\\theta_{max}$ 的思路会遇到很多麻烦。变分推断的目的是一方面估计出来联合分布的参数(也就是模型参数，得到生成模型)，另外一个方面是得到后验。"
    ]
@@ -172,10 +172,10 @@
     "Collapsed": "false"
    },
    "source": [
-    "## 近似后验的guide\n",
+    "## 指导分布\n",
     "\n",
     "\n",
-    "基本的想法是用一个带参指导分布 $q_\\phi(z)$ ($\\phi$ 被叫做变分参数) 来近似真实后验分布 $p_\\theta(z|x)$, 其中 $q$ 被称作变分分布 (variational distribution) 。"
+    "基本的想法是用一个带参指导分布 $q_\\phi(z|data)$ ($\\phi$ 被叫做变分参数) 来近似真实后验分布 $p_\\theta(z|data)$, 其中 $q$ 被称作变分分布 (variational distribution) 。"
    ]
   },
   {
@@ -184,7 +184,7 @@
     "Collapsed": "false"
    },
    "source": [
-    "指导分布 `guide()` 和模型分布一样, 它是一个包含 `pyro.sample` 和 `pyro.param` 语句的随机函数. 但是指导分布不包含任何观测数据, since the guide needs to be a properly normalized distribution. 注意在 Pyro 中，两个可调用对象 `model()` 和  `guide()` 必须具有相同的输入参数。"
+    "指导分布 `guide()` 和模型分布一样, 它是一个包含 `pyro.sample` 和 `pyro.param` 语句的随机函数。但是指导分布不包含任何观测数据, since the guide needs to be a properly normalized distribution。注意在 Pyro 中，两个可调用对象 `model()` 和  `guide()` 必须具有相同的输入参数。"
    ]
   },
   {
@@ -216,7 +216,7 @@
     "Collapsed": "false"
    },
    "source": [
-    "一旦指定了指导分布 `guide()` （我们在下面提供了一些明确的示例），我们就可以进行推断了。学习将就是一个优化问题 where each iteration of training takes a step in $\\theta-\\phi$ space that moves the guide closer to the exact posterior. 为此，我们需要定义适当的目标函数。"
+    "一旦指定了指导分布 `guide()` （我们在下面提供了一些明确的示例），我们就可以进行推断了。学习将就是一个优化问题 ，每次迭代都是一个 $\\theta-\\phi$ space 上的梯度下降步骤，使得指导分布更加接近真实后验分布。 为此，我们需要定义适当的目标函数。"
    ]
   },
   {
@@ -252,12 +252,12 @@
     "Collapsed": "false"
    },
    "source": [
-    "根据假设我们可以计算上式中期望内部对数概率 (也就是 $\\log p_{\\theta}({\\bf x}, {\\bf z})$ 和 $\\log q_{\\phi}({\\bf z})$). 因为指导分布是一个可以从中采样的参数分布, 所以我们可以计算 ELBO 的蒙特卡洛估计. 至关重要的是 ELBO 为对数证据的下限，即对于所有的 $\\theta$ 和 $\\phi$，我们都有\n",
+    "根据假设，我们可以计算上式中期望内部对数概率 (也就是 $\\log p_{\\theta}({\\bf x}, {\\bf z})$ 和 $\\log q_{\\phi}({\\bf z})$)。因为指导分布是一个可以从中采样的参数分布，所以我们可以计算 ELBO 的蒙特卡洛估计。至关重要的是 ELBO 为对数证据的下限，即对于所有的 $\\theta$ 和 $\\phi$，我们都有\n",
     "\n",
     "$$\\log p_{\\theta}({\\bf x}) \\ge {\\rm ELBO}$$\n",
     "\n",
     "\n",
-    "因此，如果我们采取随机梯度更新来最大化 ELBO，那么我们也会 pushing the log evidence higher (in expectation). 此外，可以证明ELBO 和对数证据之间的差就是 `guide` 和潜变量后验分布之间的KL散度： \n",
+    "因此，如果我们采取随机梯度更新来最大化 ELBO，那么我们也会 pushing the log evidence higher (in expectation)。此外，可以证明ELBO 和对数证据之间的差就是 `guide` 和潜变量后验分布之间的KL散度： \n",
     "\n",
     "$$ \\log p_{\\theta}({\\bf x}) - {\\rm ELBO} = \n",
     "\\rm{KL}\\!\\left( q_{\\phi}({\\bf z}) \\lVert p_{\\theta}({\\bf z} | {\\bf x}) \\right) $$"
@@ -269,7 +269,7 @@
     "Collapsed": "false"
    },
    "source": [
-    "KL 散度是两个分布之间 “相似性” 的一个非负度量。所以对每个固定的 $\\theta$, as we take steps in $\\phi$ space that increase the ELBO, we decrease the KL divergence between the guide and the posterior, 也就是说，我们让 `guide` 更加接近后验分布了。 而不固定的 $\\theta$时， we take gradient steps in both $\\theta$ and $\\phi$ space simultaneously so that the guide and model play chase, with the guide tracking a moving posterior $\\log p_{\\theta}({\\bf z} | {\\bf x})$. 或许有些令人惊讶, despite the moving target, 对很多不同的问题来说这个优化问题可以解决 (to a suitable level of approximation)."
+    "KL 散度是两个分布之间 “相似性” 的一个非负度量。所以对每个固定的 $\\theta$, as we take steps in $\\phi$ space that increase the ELBO, we decrease the KL divergence between the guide and the posterior, 也就是说，我们让 `guide` 更加接近后验分布了。 而不固定的 $\\theta$时， we take gradient steps in both $\\theta$ and $\\phi$ space simultaneously so that the guide and model play chase, with the guide tracking a moving posterior $\\log p_{\\theta}({\\bf z} | {\\bf x})$。或许有些令人惊讶是(despite the moving target),对很多不同的问题来说这个优化问题可以解决(to a suitable level of approximation)."
    ]
   },
   {
@@ -364,7 +364,7 @@
     "(动态生成的潜变量和参数问题) This presents some challenges because it means that different executions of `model()` and `guide()` may have quite different behavior, with e.g. certain latent random variables and parameters only appearing some of the time. **Indeed parameters may be created dynamically during the course of inference.** 也就是说 the space we're doing optimization over, which is parameterized by $\\theta$ and $\\phi$, can grow and change dynamically.\n",
     "\n",
     "\n",
-    "In order to support this behavior, Pyro 需要为学习过程中新出现的参数动态的生成一个优化器. 幸运的是, PyTorch有一个轻量级的优化库 (see [torch.optim](http://pytorch.org/docs/master/optim.html)) that  can easily be repurposed for the dynamic case. "
+    "为了支持动态参数生成，Pyro 需要为学习过程中新出现的参数动态的生成一个优化器. 幸运的是, PyTorch有一个轻量级的优化库 (see [torch.optim](http://pytorch.org/docs/master/optim.html)) that  can easily be repurposed for the dynamic case. "
    ]
   },
   {
@@ -373,8 +373,20 @@
     "Collapsed": "false"
    },
    "source": [
-    "All of this is controlled by the `optim.PyroOptim` class, which is basically a thin wrapper around PyTorch optimizers. `PyroOptim` 有两个输入参数: a constructor for PyTorch optimizers `optim_constructor` and a specification of the optimizer arguments `optim_args`. 总的来说, 就是在优化的过程中, 一旦某个新的参数产生， `optim_constructor` 就会初始化一个指定类型的优化器 with arguments given by `optim_args`.\n",
+    "All of this is controlled by the `optim.PyroOptim` class, which is basically a thin wrapper around PyTorch optimizers. `PyroOptim` 有两个输入参数: \n",
     "\n",
+    "- a constructor for PyTorch optimizers `optim_constructor` and \n",
+    "- a specification of the optimizer arguments `optim_args`. \n",
+    "\n",
+    "总的来说, 就是在优化的过程中, 一旦某个新的参数产生， `optim_constructor` 就会初始化一个指定类型的优化器 with arguments given by `optim_args`."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "Collapsed": "false"
+   },
+   "source": [
     "Most users will probably not interact with `PyroOptim` directly and will instead interact with the aliases defined in `optim/__init__.py`. Let's see how that goes. \n",
     "\n",
     "有两种方法可以指定优化器参数。简单的情况是, 使用一个指定参数的固定字典 `optim_args` 来初始化一个 PyTorch optimizers for _all_ the parameters:\n",
@@ -421,7 +433,7 @@
     "Collapsed": "false"
    },
    "source": [
-    "## 端对端例子\n",
+    "## 掷硬币例子\n",
     "\n",
     "\n",
     "我们以一个简单的例子结束。您已获得两面硬币。您想确定硬币是否公平，即硬币以相同的频率出现正面或背面. \n",
@@ -433,7 +445,7 @@
    ]
   },
   {
-   "cell_type": "markdown",
+   "cell_type": "raw",
    "metadata": {
     "Collapsed": "false"
    },
@@ -543,7 +555,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 1,
+   "execution_count": 2,
    "metadata": {
     "Collapsed": "false"
    },
@@ -553,7 +565,7 @@
      "output_type": "stream",
      "text": [
       "....................\n",
-      "based on the data and our prior belief, the fairness of the coin is 0.535 +- 0.090\n"
+      "based on the data and our prior belief, the fairness of the coin is 0.538 +- 0.089\n"
      ]
     }
    ],
@@ -645,6 +657,104 @@
    "source": [
     "(可以看出结果接近精确后验推断的值) This estimate is to be compared to the exact posterior mean, which in this case is given by $16/30 = 0.5\\bar{3}$.\n",
     "Note that the final estimate of the fairness of the coin is in between the the fairness preferred by the prior (namely $0.50$) and the fairness suggested by the raw empirical frequencies ($6/10 = 0.60$). "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "Collapsed": "false"
+   },
+   "source": [
+    "## 思考\n",
+    "\n",
+    "<big> 思考问题: 优化中交替梯度下降如何手写实现？ </big>"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "Collapsed": "false"
+   },
+   "source": [
+    "对每个固定的 $\\theta$, as we take steps in $\\phi$ space that increase the ELBO, we decrease the KL divergence between the guide and the posterior, 也就是说，我们让 `guide` 更加接近后验分布了。 而不固定的 $\\theta$时， we take gradient steps in both $\\theta$ and $\\phi$ space simultaneously so that the guide and model play chase, with the guide tracking a moving posterior $\\log p_{\\theta}({\\bf z} | {\\bf x})$。或许有些令人惊讶是(despite the moving target),对很多不同的问题来说这个优化问题可以解决(to a suitable level of approximation).\n",
+    "\n",
+    "下面是一个没有生成参数 $\\theta$ 的模型分布，以及具备两个变分参数 $a, b$ 的指导分布。我们手写实现了它的梯度下降法，那么对于有生成参数 $\\theta$ 的模型分布，优化中交替梯度下降如何手写实现？"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {
+    "Collapsed": "false"
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Before updated: tensor(8.5000, requires_grad=True) tensor(1., requires_grad=True)\n",
+      "After updated: tensor(9.0979, requires_grad=True) tensor(0.6203, requires_grad=True)\n",
+      "a =  9.097911834716797\n",
+      "b =  0.6202840209007263\n"
+     ]
+    }
+   ],
+   "source": [
+    "import torch, pyro, pyro.infer, pyro.optim\n",
+    "import pyro.distributions as dist\n",
+    "import matplotlib.pyplot as plt\n",
+    "import numpy as np\n",
+    "pyro.set_rng_seed(101)\n",
+    "mu = 8.5\n",
+    "\n",
+    "def scale(mu):\n",
+    "    weight = pyro.sample(\"weight\", dist.Normal(mu, 1.0))\n",
+    "    return pyro.sample(\"measurement\", dist.Normal(weight, 0.75))\n",
+    "conditioned_scale = pyro.condition(scale, data={\"measurement\": torch.tensor(9.5)})\n",
+    "\n",
+    "def scale_parametrized_guide(mu):\n",
+    "    a = pyro.param(\"a\", torch.tensor(mu))\n",
+    "    b = pyro.param(\"b\", torch.tensor(1.))\n",
+    "    return pyro.sample(\"weight\", dist.Normal(a, torch.abs(b)))\n",
+    "\n",
+    "loss_fn = pyro.infer.Trace_ELBO().differentiable_loss\n",
+    "\n",
+    "pyro.clear_param_store()\n",
+    "with pyro.poutine.trace(param_only=True) as param_capture: # 提取参数信息\n",
+    "    loss = loss_fn(conditioned_scale, scale_parametrized_guide, mu)\n",
+    "    loss.backward()\n",
+    "params = [site[\"value\"].unconstrained() for site in param_capture.trace.nodes.values()]\n",
+    "\n",
+    "print(\"Before updated:\", pyro.param('a'), pyro.param('b'))\n",
+    "\n",
+    "losses, a,b  = [], [], []\n",
+    "lr = 0.001\n",
+    "num_steps = 1000\n",
+    "# 如何手写梯度下降参数更新 for 交替梯度下降？\n",
+    "def step(params): \n",
+    "    for x in params:\n",
+    "        x.data = x.data - lr * x.grad\n",
+    "        x.grad.zero_()\n",
+    "        \n",
+    "for t in range(num_steps):\n",
+    "    with pyro.poutine.trace(param_only=True) as param_capture:\n",
+    "        loss = loss_fn(conditioned_scale, scale_parametrized_guide, mu)\n",
+    "        loss.backward()\n",
+    "        losses.append(loss.data)\n",
+    "\n",
+    "    params = [site[\"value\"].unconstrained() for site in param_capture.trace.nodes.values()]\n",
+    "    a.append(pyro.param(\"a\").item())\n",
+    "    b.append(pyro.param(\"b\").item())\n",
+    "    step(params)\n",
+    "print(\"After updated:\", pyro.param('a'), pyro.param('b'))\n",
+    "\n",
+    "\n",
+    "plt.plot(losses)\n",
+    "plt.title(\"ELBO\")\n",
+    "plt.xlabel(\"step\")\n",
+    "plt.ylabel(\"loss\");\n",
+    "print('a = ',pyro.param(\"a\").item())\n",
+    "print('b = ', pyro.param(\"b\").item())"
    ]
   },
   {

@@ -17,12 +17,12 @@
    "source": [
     "# Pyro 推断简介\n",
     "\n",
-    "现代机器学习的许多内容可以理解成近似推断并且使用 Pyro 这样的语言表达出来. To motivate the rest of this tutorial, 让我们为一个简单的物理问题建立一个生成模型，以便我们可以使用 Pyro 的推理机制来解决它。"
+    "现代机器学习的许多内容可以理解成近似推断并且使用 Pyro 这样的语言表达出来。为了说明这一点，让我们为一个简单的物理问题建立一个生成模型，并且使用 Pyro 的推理机制来解决它。"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 20,
+   "execution_count": 1,
    "metadata": {
     "Collapsed": "false"
    },
@@ -46,7 +46,7 @@
     "Collapsed": "false"
    },
    "source": [
-    "假设我们试图得到某物的重量，但是我们使用的秤是不可靠的，并且每当我们称量同一物体时会给出稍微变动的读数。我们可以尝试 compensate for this variability by integrating the noisy measurement information with **a guess based on some prior knowledge about the object**, like its density or material properties. 我们用以下概率模型来模拟：\n",
+    "假设我们试图得到某物的重量，但是我们使用的秤是不可靠的，并且每当我们称量同一物体时会给出稍微变动的读数。我们用以下概率模型来模拟：\n",
     "\n",
     "$${\\sf weight} \\,  \\sim \\cal {\\sf Normal}({\\mu}, 1) $$\n",
     "$${\\sf measurement} \\, |  {\\sf weight} \\sim {\\sf Normal}({\\sf weight}, 0.75)$$\n",
@@ -89,7 +89,7 @@
    "source": [
     "## 随机函数的条件化\n",
     "\n",
-    "概率编程的真正威力是把生成模型对观测数据条件化并且推断产生观测数据的隐变量的能力。在 Pyro 中，we separate the expression of conditioning from its evaluation via inference, 使得我们能够只写一个随机函数 `model` 而对许多不同的样本进行条件化. Pyro suppors constraining a model's internal `sample` statements to be equal to a given set of observations."
+    "概率编程的真正威力是：把生成模型对观测数据条件化并且推断产生观测数据的隐变量的能力。在 Pyro 推断过程中，我们剥离条件化的表达式和其计算, 使得我们能够只写一个随机函数 `model` 而对许多不同的样本进行条件化. Pyro suppors constraining a model's internal `sample` statements to be equal to a given set of observations."
    ]
   },
   {
@@ -102,12 +102,12 @@
     "\n",
     "$$p({\\sf weight} \\, |{\\sf measurement}=9.5 \\,; \\, \\mu=8.5) = \\, ? $$\n",
     "\n",
-    "Pyro provides the function `pyro.condition` to allow us to constrain the values of sample statements.  `pyro.condition` 是一个输入是 a model and a dictionary of observations 的高阶函数， 它的输出是 a new model that has the same input and output signatures but always uses the given values at observed `sample` statements:"
+    "Pyro 用 `pyro.condition` 来约束 sample statements的取值.  `pyro.condition` 是一个输入是 a model and a dictionary of observations 的高阶函数， 它的输出是 a new model that has the same input and output signatures but always uses the given values at observed `sample` statements:"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 11,
+   "execution_count": 5,
    "metadata": {
     "Collapsed": "false"
    },
@@ -118,7 +118,7 @@
        "9.5"
       ]
      },
-     "execution_count": 11,
+     "execution_count": 5,
      "metadata": {},
      "output_type": "execute_result"
     }
@@ -129,6 +129,39 @@
     "# Input of `pyro.condition`: a model and a dictionary of observations\n",
     "conditioned_scale(mu)\n",
     "# Always uses the given values at observed sample statements!"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {
+    "Collapsed": "false"
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "weight Normal(loc: 8.5, scale: 1.0) tensor(6.7466) False\n",
+      "measurement Normal(loc: 6.746636867523193, scale: 0.75) 9.5 True\n"
+     ]
+    }
+   ],
+   "source": [
+    "import pyro.distributions as dist\n",
+    "from pyro.poutine.trace_messenger import TraceMessenger\n",
+    "\n",
+    "cond_data = {\"temp\": torch.tensor(52)}\n",
+    "\n",
+    "with TraceMessenger() as tracer:\n",
+    "    conditioned_scale(mu) \n",
+    "\n",
+    "trace = tracer.trace\n",
+    "logp = 0.\n",
+    "for name, node in trace.nodes.items():\n",
+    "    print(name, node['fn'], node['value'], node['is_observed'])\n",
+    "    if node[\"type\"] == \"sample\":\n",
+    "        logp = logp + node[\"fn\"].log_prob(node[\"value\"]).sum()"
    ]
   },
   {
@@ -229,7 +262,7 @@
     "目前，重要性抽样，MCMC和随机变分推断已在 Pyro 中实现，我们计划在将来添加其他算法。\n",
     "\n",
     "\n",
-    "尽管指导函数的定义在不同的推断算法中有所不同，但通常应选择 guide function，使其原则上具有足够的灵活性 to closely approximate the distribution over all unobserved `sample`(也就是非条件化的变量) statements in the model. "
+    "尽管指导函数的定义在不同的推断算法中有所不同，但通常应选择 guide function，使其原则上具有足够的灵活性 to closely approximate the distribution over all unobserved `sample`statements(也就是非条件化的变量) in the model. "
    ]
   },
   {
@@ -244,7 +277,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 12,
+   "execution_count": 10,
    "metadata": {
     "Collapsed": "false"
    },
@@ -258,7 +291,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 18,
+   "execution_count": 11,
    "metadata": {
     "Collapsed": "false"
    },
@@ -278,7 +311,7 @@
     "Collapsed": "false"
    },
    "source": [
-    "## 参数化模型和变分推断\n",
+    "## 参数化分布和变分推断\n",
     "\n",
     "Parametrized Stochastic Functions and Variational Inference\n",
     "\n",
@@ -513,14 +546,27 @@
    },
    "source": [
     "## 拆解成梯度下降法\n",
-    "\n"
+    "\n",
+    "为了更深一步理解上述的代码，我们把它拆解成梯度下降法。\n",
+    "\n",
+    "我们可以用下面代码获得一次执行中涉及的参数。\n",
+    "\n",
+    "```python\n",
+    "with pyro.poutine.trace(param_only=True) as param_capture: # 提取参数信息\n",
+    "    loss = loss_fn(conditioned_scale, scale_parametrized_guide, mu)\n",
+    "    loss.backward()\n",
+    "params = [site[\"value\"].unconstrained() for site in param_capture.trace.nodes.values()]\n",
+    "``` \n"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 184,
+   "execution_count": 14,
    "metadata": {
-    "Collapsed": "false"
+    "Collapsed": "false",
+    "jupyter": {
+     "source_hidden": true
+    }
    },
    "outputs": [
     {
@@ -571,28 +617,29 @@
     "loss_fn = pyro.infer.Trace_ELBO().differentiable_loss\n",
     "\n",
     "pyro.clear_param_store()\n",
-    "\n",
-    "with pyro.poutine.trace(param_only=True) as param_capture:\n",
+    "with pyro.poutine.trace(param_only=True) as param_capture: # 提取参数信息\n",
     "    loss = loss_fn(conditioned_scale, scale_parametrized_guide, mu)\n",
     "    loss.backward()\n",
     "params = [site[\"value\"].unconstrained() for site in param_capture.trace.nodes.values()]\n",
     "\n",
-    "def step(params):\n",
-    "    for x in params:\n",
-    "        x.data = x.data - lr * x.grad\n",
-    "        x.grad.zero_()\n",
-    "\n",
     "print(\"Before updated:\", pyro.param('a'), pyro.param('b'))\n",
+    "\n",
     "losses, a,b  = [], [], []\n",
     "lr = 0.001\n",
     "num_steps = 1000\n",
+    "# 梯度下降参数更新\n",
+    "def step(params): \n",
+    "    for x in params:\n",
+    "        x.data = x.data - lr * x.grad\n",
+    "        x.grad.zero_()\n",
+    "        \n",
     "for t in range(num_steps):\n",
     "    with pyro.poutine.trace(param_only=True) as param_capture:\n",
     "        loss = loss_fn(conditioned_scale, scale_parametrized_guide, mu)\n",
     "        loss.backward()\n",
     "        losses.append(loss.data)\n",
-    "    params = [site[\"value\"].unconstrained() for site in param_capture.trace.nodes.values()]\n",
     "\n",
+    "    params = [site[\"value\"].unconstrained() for site in param_capture.trace.nodes.values()]\n",
     "    a.append(pyro.param(\"a\").item())\n",
     "    b.append(pyro.param(\"b\").item())\n",
     "    step(params)\n",
