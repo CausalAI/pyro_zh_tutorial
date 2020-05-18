@@ -39,7 +39,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Pyro中随机函数的维度" href="tensor_shapes.html" />
-    <link rel="prev" title="SVI Part II: 条件独立, 子采样和 Amortization" href="svi_part_ii.html" /> 
+    <link rel="prev" title="SVI Part II: 条件独立性，子采样和 Amortization" href="svi_part_ii.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -95,7 +95,7 @@
 <li class="toctree-l1"><a class="reference internal" href="intro_part_i.html">Pyro 模型介绍</a></li>
 <li class="toctree-l1"><a class="reference internal" href="intro_part_ii.html">Pyro 推断简介</a></li>
 <li class="toctree-l1"><a class="reference internal" href="svi_part_i.html">SVI Part I: 随机变分推断基础</a></li>
-<li class="toctree-l1"><a class="reference internal" href="svi_part_ii.html">SVI Part II: 条件独立, 子采样和 Amortization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="svi_part_ii.html">SVI Part II: 条件独立性，子采样和 Amortization</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">SVI Part III: ELBO 梯度估计</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#数学背景">数学背景</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#简单情况:-可重参数化">简单情况: 可重参数化</a></li>
@@ -478,7 +478,7 @@ div.rendered_html tbody tr:hover {
 <h1>SVI Part III: ELBO 梯度估计<a class="headerlink" href="#SVI-Part-III:-ELBO-梯度估计" title="Permalink to this headline">¶</a></h1>
 <p>本文讲解 SVI 的 ELBO 优化理论，如何得到 ELBO Gradient Estimators。</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -527,16 +527,14 @@ div.rendered_html tbody tr:hover {
             <span class="k">if</span> <span class="n">k</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
                 <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
-
             <span class="n">alpha_error</span> <span class="o">=</span> <span class="n">param_abs_error</span><span class="p">(</span><span class="s2">&quot;alpha_q&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_n</span><span class="p">)</span>
             <span class="n">beta_error</span> <span class="o">=</span> <span class="n">param_abs_error</span><span class="p">(</span><span class="s2">&quot;beta_q&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_n</span><span class="p">)</span>
-
             <span class="k">if</span> <span class="n">alpha_error</span> <span class="o">&lt;</span> <span class="n">tolerance</span> <span class="ow">and</span> <span class="n">beta_error</span> <span class="o">&lt;</span> <span class="n">tolerance</span><span class="p">:</span>
                 <span class="k">break</span>
 
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Did </span><span class="si">%d</span><span class="s2"> steps of inference.&quot;</span> <span class="o">%</span> <span class="n">k</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">((</span><span class="s2">&quot;两个变分参数的最终 absolute errors &quot;</span> <span class="o">+</span>
-               <span class="s2">&quot;were </span><span class="si">%.4f</span><span class="s2"> &amp; </span><span class="si">%.4f</span><span class="s2">&quot;</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="n">alpha_error</span><span class="p">,</span> <span class="n">beta_error</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">((</span><span class="s2">&quot;两个变分参数的最终绝对误差&quot;</span> <span class="o">+</span>
+               <span class="s2">&quot;是 </span><span class="si">%.4f</span><span class="s2"> &amp; </span><span class="si">%.4f</span><span class="s2">&quot;</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="n">alpha_error</span><span class="p">,</span> <span class="n">beta_error</span><span class="p">))</span>
 
 <span class="n">bbe</span> <span class="o">=</span> <span class="n">BernoulliBetaExample</span><span class="p">(</span><span class="n">max_steps</span><span class="o">=</span><span class="mi">10000</span><span class="p">)</span>
 <span class="n">bbe</span><span class="o">.</span><span class="n">do_inference</span><span class="p">(</span><span class="n">use_decaying_avg_baseline</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -551,19 +549,34 @@ div.rendered_html tbody tr:hover {
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 随机变分推断 with use_decaying_avg_baseline=True
-....
-Did 357 steps of inference.
-两个变分参数的最终 absolute errors were 0.4991 &amp; 0.4441
+.....
+Did 443 steps of inference.
+两个变分参数的最终绝对误差是 0.4413 &amp; 0.4997
 随机变分推断 with use_decaying_avg_baseline=False
 ..........
-Did 993 steps of inference.
-两个变分参数的最终 absolute errors were 0.4992 &amp; 0.4671
+Did 972 steps of inference.
+两个变分参数的最终绝对误差是 0.4996 &amp; 0.4562
 </pre></div></div>
 </div>
 <div class="section" id="数学背景">
 <h2>数学背景<a class="headerlink" href="#数学背景" title="Permalink to this headline">¶</a></h2>
-<p>我们定义一个模型分布 <span class="math notranslate nohighlight">\(p_{\theta}({\bf x}, {\bf z}) = p_{\theta}({\bf x}|{\bf z}) p_{\theta}({\bf z})\)</span>, where <span class="math notranslate nohighlight">\({\bf x}\)</span> 为可观测变量和 <span class="math notranslate nohighlight">\({\bf z}\)</span> 为潜变量。我们还定义一个指导分布 <span class="math notranslate nohighlight">\(q_{\phi}({\bf z})\)</span>（也就是变分分布）。 这里 <span class="math notranslate nohighlight">\({\theta}\)</span> and <span class="math notranslate nohighlight">\(\phi\)</span> 分别是 model 和 guide 的参数. (In particular these are <em>not</em> random variables that call for a Bayesian treatment).</p>
-<p>(通过优化 ELBO 来最大化<span class="math notranslate nohighlight">\(\log p_{\theta}({\bf x})\)</span>) We’d like to maximize the log evidence <span class="math notranslate nohighlight">\(\log p_{\theta}({\bf x})\)</span> by maximizing the ELBO (the evidence lower bound) given by</p>
+<p>我们定义一个模型分布 <span class="math notranslate nohighlight">\(p_{\theta}({\bf x}, {\bf z}) = p_{\theta}({\bf x}|{\bf z}) p_{\theta}({\bf z})\)</span>，其中 <span class="math notranslate nohighlight">\({\bf x}\)</span> 为可观测变量和 <span class="math notranslate nohighlight">\({\bf z}\)</span> 为潜变量。我们还定义一个指导分布 <span class="math notranslate nohighlight">\(q_{\phi}({\bf z})\)</span>（也就是变分分布）。 这里 <span class="math notranslate nohighlight">\({\theta}\)</span> and <span class="math notranslate nohighlight">\(\phi\)</span> 分别是 model 和 guide 的参数. (In particular these are <em>not</em> random variables that call for a Bayesian treatment).</p>
+<center><figure>
+    <table>
+        <tr>
+            <td style="width: 200px">
+                <img src="_static/img/vae_model.png"  style="width: 250px;">
+            </td>
+            <td style="width: 200px">
+                <img src="_static/img/vae_guide.png" style="width: 250px;">
+            </td>
+        </tr>
+    </table>
+    <figcaption>
+        <font size="+1"><b>Figure VAE:</b> </font> <b>(Left)</b> 模型分布
+        <b>(Right)</b> 指导分布
+    </figcaption>
+</figure></center><p>(通过优化 ELBO 来最大化<span class="math notranslate nohighlight">\(\log p_{\theta}({\bf x})\)</span>) We’d like to maximize the log evidence <span class="math notranslate nohighlight">\(\log p_{\theta}({\bf x})\)</span> by maximizing the ELBO (the evidence lower bound) given by</p>
 <div class="math notranslate nohighlight">
 \[{\rm ELBO} \equiv \mathbb{E}_{q_{\phi}({\bf z})} \left [
 \log p_{\theta}({\bf x}, {\bf z}) - \log q_{\phi}({\bf z})
@@ -584,8 +597,28 @@ f_{\phi}({\bf z}) \right]\]</div>
 <p>假如我们可以进行重参数化：</p>
 <div class="math notranslate nohighlight">
 \[\mathbb{E}_{q_{\phi}({\bf z})} \left [f_{\phi}({\bf z}) \right]
-=\mathbb{E}_{q({\bf \epsilon})} \left [f_{\phi}(g_{\phi}({\bf \epsilon})) \right]\]</div>
-<p>Crucially 我们把所有参数 <span class="math notranslate nohighlight">\(\phi\)</span> 依赖性移到了期望的内部，其中 <span class="math notranslate nohighlight">\(q({\bf \epsilon})\)</span> 是一个与 <span class="math notranslate nohighlight">\(\phi\)</span> 无关的固定的分布（数学上 <span class="math notranslate nohighlight">\(Z \sim q_\phi(z)\)</span>，我们找到一个 <span class="math notranslate nohighlight">\(E \sim q(\epsilon)\)</span> 使之满足 <span class="math notranslate nohighlight">\(Z = g_\phi(E)\)</span> 具备分布 <span class="math notranslate nohighlight">\(q_\phi(z)\)</span> ）。这种重新参数化可以适用许多分布（例如正态分布）；更多详情参见参考文献[3]. 在这种情况下可以交换求梯度和求期望的运算，从而得到：</p>
+=\mathbb{E}_{q({\bf \epsilon})} \left [f_{\phi}(g_{\phi}({\bf \epsilon})) \right] \,\,\,\,\,\, (1)\]</div>
+<p>很关键的步骤是我们把所有参数 <span class="math notranslate nohighlight">\(\phi\)</span> 依赖性移到了期望的内部，其中 <span class="math notranslate nohighlight">\(q({\bf \epsilon})\)</span> 是一个与 <span class="math notranslate nohighlight">\(\phi\)</span> 无关的固定的分布。</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">graphviz</span> <span class="k">import</span> <span class="n">Source</span>
+<span class="n">Source</span><span class="p">(</span><span class="s1">&#39;digraph{rankdir=LR; E -&gt; Z[label=g]; Z -&gt; Y[label=f]}&#39;</span><span class="p">)</span>
+<span class="c1"># Y = f(Z)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<img alt="_images/svi_part_iii_8_0.svg" src="_images/svi_part_iii_8_0.svg" /></div>
+</div>
+<p>数学上 <span class="math notranslate nohighlight">\(Z \sim q_\phi(z)\)</span>，我们找到一个 <span class="math notranslate nohighlight">\(E \sim q(\epsilon)\)</span> 使之满足 <span class="math notranslate nohighlight">\(Z = g_\phi(E)\)</span> 具备分布 <span class="math notranslate nohighlight">\(q_\phi(z)\)</span>。随机变量 <span class="math notranslate nohighlight">\(Y\)</span> 有两个表达式，即$ Y= f(Z)$ 和 $ Y= f(g(<span class="math">\epsilon</span>))$, 所以其期望有两种计算方法，故而 (1) 式成立。</p>
+<p>这种重新参数化可以适用许多分布（例如正态分布）；更多详情参见参考文献[3]. 在这种情况下可以交换求梯度和求期望的运算，从而得到：</p>
 <div class="math notranslate nohighlight">
 \[\nabla_{\phi}\mathbb{E}_{q({\bf \epsilon})} \left [f_{\phi}(g_{\phi}({\bf \epsilon})) \right]=
 \mathbb{E}_{q({\bf \epsilon})} \left [\nabla_{\phi}f_{\phi}(g_{\phi}({\bf \epsilon})) \right]\]</div>
@@ -626,15 +659,15 @@ q_{\phi}({\bf z})\nabla_{\phi} \log q_{\phi}({\bf z})\]</div>
 <div class="math notranslate nohighlight">
 \[{\rm surrogate \;objective} \equiv
 \log q_{\phi}({\bf z}) \overline{f_{\phi}({\bf z})} + f_{\phi}({\bf z})\]</div>
-<p>Here the bar indicates that the term is held constant (i.e. it is not to be differentiated w.r.t. <span class="math notranslate nohighlight">\(\phi\)</span>). 为了获得（单样本）蒙特卡洛梯度估计，我们根据指导分布对潜变量进行了采样，计算替代目标函数，并进行微分。The result is an unbiased estimate of <span class="math notranslate nohighlight">\(\nabla_{\phi}\mathbb{E}_{q_{\phi}({\bf z})} \left [ f_{\phi}({\bf z}) \right]\)</span>. In equations:</p>
+<p>Here the bar indicates that the term is held constant (i.e. it is not to be differentiated w.r.t. <span class="math notranslate nohighlight">\(\phi\)</span>). 为了获得（单样本）蒙特卡洛梯度估计，我们根据指导分布对潜变量进行了采样，计算替代目标函数，并进行微分。 得到的结果将会是 <span class="math notranslate nohighlight">\(\nabla_{\phi}\mathbb{E}_{q_{\phi}({\bf z})} \left [ f_{\phi}({\bf z}) \right]\)</span> 的无偏估计。 用公式来说就是：</p>
 <div class="math notranslate nohighlight">
 \[\nabla_{\phi} {\rm ELBO} = \mathbb{E}_{q_{\phi}({\bf z})} \left [
 \nabla_{\phi} ({\rm surrogate \; objective}) \right]\]</div>
 <p>有两个策略可以继续改进, 一个策略是考虑使用特殊结构的损失函数, 另外一个策略是改进梯度方向(像动量法一样).</p>
 <blockquote>
-<div><p>Variance 问题：为什么希望做 MLE Deep Learning</p>
+<div><p>高方差问题：为什么希望做 MLE Deep Learning</p>
 </div></blockquote>
-<p>我们现在有了一个通用方法得到损失函数 ELBO 关于参数梯度的无偏估计。不幸的是, 多数情况下，我们的指导分布 <span class="math notranslate nohighlight">\(q(\cdot)\)</span> 包含一些不可重参数化分布时候, 上一节构建的估计量倾向于具有高方差. 实际上在许多感兴趣的情况下，方差是如此之大，以致该 estimator 无法使用。 所以我们需要减少方差的策略 (for a discussion see reference [4]). 我们将介绍两种减少方差的策略：</p>
+<p>我们现在有了一个通用方法得到损失函数 ELBO 关于参数梯度的无偏估计。不幸的是, 多数情况下，我们的指导分布 <span class="math notranslate nohighlight">\(q(\cdot)\)</span> 包含一些不可重参数化分布时候, 上一节构建的估计量倾向于具有高方差. 实际上在许多感兴趣的情况下，方差是如此之大，以致该 estimator 无法使用。 所以我们需要减少方差的策略 （有关讨论，请参见参考文献[4]）。我们将介绍两种减少方差的策略：</p>
 <ul class="simple">
 <li><p>第一种策略是利用损失函数 <span class="math notranslate nohighlight">\(f(\cdot)\)</span> 的内在特殊结构.</p></li>
 <li><p>第二种策略是利用先前步骤关于 <span class="math notranslate nohighlight">\(\mathbb{E}_{q_{\phi}({\bf z})} [ f_{\phi}({\bf z})]\)</span> 的估计信息来有效的减少方差，它有点类似于动量梯度下降法。</p></li>
@@ -653,17 +686,17 @@ q_{\phi}({\bf z})\nabla_{\phi} \log q_{\phi}({\bf z})\]</div>
 <div class="section" id="Reducing-Variance-via-Dependency-Structure">
 <h2>Reducing Variance via Dependency Structure<a class="headerlink" href="#Reducing-Variance-via-Dependency-Structure" title="Permalink to this headline">¶</a></h2>
 <p>利用概率图结构，也就是概率分布结构减少方差，本部分内容首先介绍其相关理论，然后给出一个 Rao-Blackwellization 例子。</p>
-<p>在上面估计 <span class="math notranslate nohighlight">\(\nabla_{\phi} {\rm ELBO}\)</span> 的讨论中，我们在遇到一般性损失函数 <span class="math notranslate nohighlight">\(f_{\phi}({\bf z})\)</span> 时候卡住了. 我们继续这个思路 (the approach we’re about to discuss is applicable in the general case) but for concreteness let’s zoom back in. 在随机变分推断的过程中，我们感兴趣的 cost function 有如下形式：</p>
+<p>在上面估计 <span class="math notranslate nohighlight">\(\nabla_{\phi} {\rm ELBO}\)</span> 的讨论中，我们在遇到一般性损失函数 <span class="math notranslate nohighlight">\(f_{\phi}({\bf z})\)</span> 时候卡住了. 我们继续这个思路 (the approach we’re about to discuss is applicable in the general case，but for concreteness let’s zoom back in)。 在随机变分推断的过程中，我们感兴趣的目标函数 <span class="math notranslate nohighlight">\(\mathbb{E}_{q_{\phi}({\bf z})} \left [ \log p_{\theta}({\bf x}, {\bf z}) - \log q_{\phi}({\bf z}) \right]\)</span> 有如下形式：</p>
 <div class="math notranslate nohighlight">
 \[\log p_{\theta}({\bf x} | {\rm Pa}_p ({\bf x})) +
 \sum_i \log p_{\theta}({\bf z}_i | {\rm Pa}_p ({\bf z}_i))
 - \sum_i \log q_{\phi}({\bf z}_i | {\rm Pa}_q ({\bf z}_i))\]</div>
 <p>where we’ve broken the log ratio <span class="math notranslate nohighlight">\(\log p_{\theta}({\bf x}, {\bf z})/q_{\phi}({\bf z})\)</span> into an observation log likelihood piece and a sum over the different latent random variables <span class="math notranslate nohighlight">\(\{{\bf z}_i \}\)</span>. We’ve also introduced the notation <span class="math notranslate nohighlight">\({\rm Pa}_p (\cdot)\)</span> and <span class="math notranslate nohighlight">\({\rm Pa}_q (\cdot)\)</span> to denote the parents of a given random variable in the model and in the guide, respectively.</p>
 <p>(读者可能会担心 what the appropriate notion of dependency would be in the case of general stochastic functions; 这里我们仅仅指 regular ol’ dependency within a single execution trace). The point is that different terms in the cost function have different dependencies on the random variables <span class="math notranslate nohighlight">\(\{ {\bf z}_i \}\)</span> and this is something we can leverage.</p>
-<p>简而言之, 对于任何不可重参数化的潜变量 <span class="math notranslate nohighlight">\({\bf z}_i\)</span>，替代目标中将会如下项</p>
+<p>简而言之, 对于任何不可重参数化的潜变量 <span class="math notranslate nohighlight">\({\bf z}_i\)</span>，替代目标 <span class="math notranslate nohighlight">\(\log q_{\phi}({\bf z}) \overline{f_{\phi}({\bf z})} + f_{\phi}({\bf z})\)</span> 中将会如下项</p>
 <div class="math notranslate nohighlight">
 \[\log q_{\phi}({\bf z}_i) \overline{f_{\phi}({\bf z})}\]</div>
-<p>我们发现移除 <span class="math notranslate nohighlight">\(\overline{f_{\phi}({\bf z})}\)</span> 中的某些项之后依然可以得到一个无偏的梯度估计; 更进一步，这样做还能减少方差。具体来说 (see reference [4] for details) we can remove any terms in <span class="math notranslate nohighlight">\(\overline{f_{\phi}({\bf z})}\)</span> that are not downstream of the latent variable <span class="math notranslate nohighlight">\({\bf z}_i\)</span> (downstream w.r.t. to the dependency structure of the guide). 请注意，这种一般性的技巧（通常通过分析处理某些随机变量以减少差异）通常被称为 Rao-Blackwellization。</p>
+<p>我们发现移除 <span class="math notranslate nohighlight">\(\overline{f_{\phi}({\bf z})}\)</span> 中的某些项之后依然可以得到一个无偏的梯度估计; 更进一步，这样做还能减少方差。具体来说 (see reference [4] for details) we can remove any terms in <span class="math notranslate nohighlight">\(\overline{f_{\phi}({\bf z})}\)</span> that are not downstream of the latent variable <span class="math notranslate nohighlight">\({\bf z}_i\)</span> (downstream w.r.t. to the dependency structure of the guide). 请注意，这种一般性的技巧（通常通过分析处理某些随机变量以减少差异）通常被称为 Rao-Blackwellization 技巧。</p>
 <p>在Pyro中，所有这些逻辑都由<code class="docutils literal notranslate"><span class="pre">SVI</span></code>类自动处理。具体来说就是使用 <code class="docutils literal notranslate"><span class="pre">TraceGraph_ELBO</span></code> 损失函数, Pyro will <strong>keep track of the dependency structure</strong> within the execution traces of the model and guide and <strong>construct a surrogate objective that has all the unnecessary terms removed</strong>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">svi</span> <span class="o">=</span> <span class="n">SVI</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">guide</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">TraceGraph_ELBO</span><span class="p">())</span>
 </pre></div>
@@ -671,7 +704,7 @@ q_{\phi}({\bf z})\nabla_{\phi} \log q_{\phi}({\bf z})\]</div>
 <p>请注意，利用此随机变量依赖关系信息需要额外的计算，所以 <code class="docutils literal notranslate"><span class="pre">TraceGraph_ELBO</span></code> 仅应在模型具有不可重参数化的随机变量的情况下使用；而在大多数应用中 <code class="docutils literal notranslate"><span class="pre">Trace_ELBO</span></code> 就已经够用了.</p>
 <div class="section" id="Rao-Blackwellization-例子">
 <h3>Rao-Blackwellization 例子<a class="headerlink" href="#Rao-Blackwellization-例子" title="Permalink to this headline">¶</a></h3>
-<p>假设我门有一个具备 <span class="math notranslate nohighlight">\(K\)</span> components 的高斯混合模型。 For each data point we: (i) first sample the component distribution <span class="math notranslate nohighlight">\(k \in [1,...,K]\)</span>; and (ii) observe the data point using the <span class="math notranslate nohighlight">\(k^{\rm th}\)</span> component distribution. 写出这种模型的最简单方法如下：</p>
+<p>假设我门有一个具备 <span class="math notranslate nohighlight">\(K\)</span> components 的高斯混合模型。对于每个数据点，我们 (i) first sample the component distribution <span class="math notranslate nohighlight">\(k \in [1, \dots,K]\)</span>; and (ii) observe the data point using the <span class="math notranslate nohighlight">\(k^{\rm th}\)</span> component distribution. 写出这种模型的最简单方法如下：</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ks</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Categorical</span><span class="p">(</span><span class="n">probs</span><span class="p">)</span><span class="o">.</span><span class="n">to_event</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
 <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;obs&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">locs</span><span class="p">[</span><span class="n">ks</span><span class="p">],</span> <span class="n">scale</span><span class="p">)</span><span class="o">.</span><span class="n">to_event</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
 </pre></div>
@@ -687,14 +720,14 @@ q_{\phi}({\bf z})\nabla_{\phi} \log q_{\phi}({\bf z})\]</div>
 </div>
 <div class="section" id="Aside:-Dependency-tracking-in-Pyro">
 <h3>Aside: Dependency tracking in Pyro<a class="headerlink" href="#Aside:-Dependency-tracking-in-Pyro" title="Permalink to this headline">¶</a></h3>
-<p>最后，谈谈依赖跟踪(dependency tracking). 在包含任意Python代码的随机函数中依赖跟踪有些棘手。Pyro中当前实现的方法类似于 WebPPL 中使用的方法(cf. reference [5]). Briefly, a conservative notion of dependency is used that relies on sequential ordering. If random variable <span class="math notranslate nohighlight">\({\bf z}_2\)</span> follows <span class="math notranslate nohighlight">\({\bf z}_1\)</span> in a given stochastic function then <span class="math notranslate nohighlight">\({\bf z}_2\)</span> <em>may be</em> dependent on <span class="math notranslate nohighlight">\({\bf z}_1\)</span> and therefore <em>is</em> assumed to be dependent. 为了减轻这种依赖跟踪可能得出的过于粗略的结论,
+<p>最后，谈谈依赖跟踪(dependency tracking). 在包含任意Python代码的随机函数中依赖跟踪有些棘手。Pyro中当前实现的方法类似于 WebPPL 中使用的方法(cf. reference [5])。简单来说, a conservative notion of dependency is used that relies on sequential ordering. If random variable <span class="math notranslate nohighlight">\({\bf z}_2\)</span> follows <span class="math notranslate nohighlight">\({\bf z}_1\)</span> in a given stochastic function then <span class="math notranslate nohighlight">\({\bf z}_2\)</span> <em>may be</em> dependent on <span class="math notranslate nohighlight">\({\bf z}_1\)</span> and therefore <em>is</em> assumed to be dependent. 为了减轻这种依赖跟踪可能得出的过于粗略的结论,
 Pyro包含用于将事物声明为独立的构造, 包括 <code class="docutils literal notranslate"><span class="pre">plate</span></code> 和 <code class="docutils literal notranslate"><span class="pre">markov</span></code> (<a class="reference internal" href="svi_part_ii.html"><span class="doc">参见上一教程</span></a>).</p>
 <p>对于存在不可重参数化变量的情况, it is therefore important for the user to make use of these constructs (when applicable) to take full advantage of the variance reduction provided by <code class="docutils literal notranslate"><span class="pre">SVI</span></code>. In some cases it may also pay to consider reordering random variables within a stochastic function (if possible). 还值得注意的是，我们希望在将来的 Pyro 版本中添加更精细的 dependency tracking notations.</p>
 </div>
 </div>
 <div class="section" id="Reducing-Variance-with-Data-Dependent-Baselines">
 <h2>Reducing Variance with Data-Dependent Baselines<a class="headerlink" href="#Reducing-Variance-with-Data-Dependent-Baselines" title="Permalink to this headline">¶</a></h2>
-<p>减少方差的第二种策略 in our ELBO gradient estimator 是使用各种基线(baselines) (see e.g. reference [6], 类似于动量梯度下降法). 实际上，它利用了上面讨论的方差减少策略所基于的相同数学原理，只是现在不删除 terms，而是添加terms。 基本上，instead of removing terms with zero expectation that tend to <em>contribute</em> to the variance，我们将增添 specially chosen terms with zero expectation 以减小方差。因此，这是一个控制变量策略。</p>
+<p>我们 ELBO 梯度估计中地中减少方差的第策略是使用各种基线(baselines) (see e.g. reference [6], 类似于动量梯度下降法). 实际上，它利用了上面讨论的方差减少策略所基于的相同数学原理，只是现在不删除 terms，而是添加terms。 基本上，instead of removing terms with zero expectation that tend to <em>contribute</em> to the variance，我们将增添 specially chosen terms with zero expectation 以减小方差。因此，这是一个控制变量策略。</p>
 <p>更详细地说，the idea is to take advantage of the fact that for any constant <span class="math notranslate nohighlight">\(b\)</span>, the following identity holds</p>
 <div class="math notranslate nohighlight">
 \[\mathbb{E}_{q_{\phi}({\bf z})} \left [\nabla_{\phi}
@@ -781,12 +814,12 @@ Pyro包含用于将事物声明为独立的构造, 包括 <code class="docutils 
 <div class="section" id="端对端-Baseline-例子">
 <h2>端对端 Baseline 例子<a class="headerlink" href="#端对端-Baseline-例子" title="Permalink to this headline">¶</a></h2>
 <p>回想一下，在<a class="reference internal" href="svi_part_i.html"><span class="doc">第一个SVI教程</span></a>中，我们考虑了掷硬币的bernoulli-beta 模型。 因为 beta 随机变量不可重参数化(or rather not easily reparameterizable)，相应的 ELBO 梯度 can be quite noisy. In that context we dealt with this problem by using a Beta distribution that provides (approximate) reparameterized gradients. 在这里，我们展示了简单的 decaying average baseline 如何减少方差in the case where the Beta distribution is treated as non-reparameterized (so that the ELBO gradient
-estimator is of the score function type). 在此过程中，我们还使用 <code class="docutils literal notranslate"><span class="pre">plate</span></code> 以完全向量化的方式编写模型。</p>
+estimator is of the score function type). 在此过程中，我们还使用 <code class="docutils literal notranslate"><span class="pre">plate</span></code> 以完全向量化的方式编写模型分布。</p>
 <p>与直接比较梯度方差不同，我们将了解SVI收敛需要多少步骤。Recall that for this particular model (because of conjugacy) we can compute the exact posterior. So to assess the utility of baselines in this context, 我们设置了以下简单实验.</p>
-<p>We initialize the guide at a specified set of variational parameters. We then do SVI until the variational parameters have gotten to within a fixed tolerance of the parameters of the exact posterior. We do this both with and without the decaying average baseline.然后，我们比较两种情况下所需的梯度步数。下面是完整的代码：</p>
+<p>We initialize the guide at a specified set of variational parameters. We then do SVI until the variational parameters have gotten to within a fixed tolerance of the parameters of the exact posterior. We do this both with and without the decaying average baseline. 然后，我们比较两种情况下所需的梯度步数。下面是完整的代码：</p>
 <p>(<em>Since apart from the use of</em> <code class="docutils literal notranslate"><span class="pre">plate</span></code> <em>and</em> <code class="docutils literal notranslate"><span class="pre">use_decaying_avg_baseline</span></code>, <em>this code is very similar to the code in parts I and II of the SVI tutorial, we’re not going to go through the code line by line.</em> )</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -898,13 +931,13 @@ estimator is of the score function type). 在此过程中，我们还使用 <cod
 <div class="highlight"><pre>
 Doing inference with use_decaying_avg_baseline=True
 ..
-Did 126 steps of inference.
-Final absolute errors for the two variational parameters were 0.7995 &amp; 0.7301
+Did 155 steps of inference.
+Final absolute errors for the two variational parameters were 0.7975 &amp; 0.7776
 
 Doing inference with use_decaying_avg_baseline=False
 ....
-Did 382 steps of inference.
-Final absolute errors for the two variational parameters were 0.7998 &amp; 0.7558
+Did 324 steps of inference.
+Final absolute errors for the two variational parameters were 0.7998 &amp; 0.7978
 
 </pre></div></div>
 </div>
@@ -929,6 +962,15 @@ Final absolute errors for the two variational parameters were 0.7998 &amp; 0.755
 <p>[4] <code class="docutils literal notranslate"><span class="pre">Gradient</span> <span class="pre">Estimation</span> <span class="pre">Using</span> <span class="pre">Stochastic</span> <span class="pre">Computation</span> <span class="pre">Graphs</span></code>,      John Schulman, Nicolas Heess, Theophane Weber, Pieter Abbeel</p>
 <p>[5] <code class="docutils literal notranslate"><span class="pre">Deep</span> <span class="pre">Amortized</span> <span class="pre">Inference</span> <span class="pre">for</span> <span class="pre">Probabilistic</span> <span class="pre">Programs</span></code>      Daniel Ritchie, Paul Horsfall, Noah D. Goodman</p>
 <p>[6] <code class="docutils literal notranslate"><span class="pre">Neural</span> <span class="pre">Variational</span> <span class="pre">Inference</span> <span class="pre">and</span> <span class="pre">Learning</span> <span class="pre">in</span> <span class="pre">Belief</span> <span class="pre">Networks</span></code>      Andriy Mnih, Karol Gregor</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>
+</pre></div>
+</div>
+</div>
 </div>
 </div>
 
@@ -943,7 +985,7 @@ Final absolute errors for the two variational parameters were 0.7998 &amp; 0.755
         <a href="tensor_shapes.html" class="btn btn-neutral float-right" title="Pyro中随机函数的维度" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="svi_part_ii.html" class="btn btn-neutral float-left" title="SVI Part II: 条件独立, 子采样和 Amortization" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="svi_part_ii.html" class="btn btn-neutral float-left" title="SVI Part II: 条件独立性，子采样和 Amortization" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
