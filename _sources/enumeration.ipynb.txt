@@ -19,13 +19,13 @@
    "source": [
     "**Summary**\n",
     "\n",
-    "- Pyro implements automatic enumeration over discrete latent variables.\n",
+    "- Pyro对离散的潜在变量实现自动枚举。\n",
     "- This strategy can be used alone or inside SVI (via [TraceEnum_ELBO](http://docs.pyro.ai/en/dev/inference_algos.html#pyro.infer.traceenum_elbo.TraceEnum_ELBO)), HMC, or NUTS.\n",
     "- The standalone [infer_discrete](http://docs.pyro.ai/en/dev/inference_algos.html#pyro.infer.discrete.infer_discrete) can generate samples or MAP estimates.\n",
     "- Annotate a sample site `infer={\"enumerate\": \"parallel\"}` to trigger enumeration.\n",
-    "- If a sample site determines downstream structure, instead use `{\"enumerate\": \"sequential\"}`.\n",
+    "- 如果样本点(sample site)确定下游结构，就使用 `{\"enumerate\": \"sequential\"}`。\n",
     "- Write your models to allow arbitrarily deep batching on the left, e.g. use broadcasting.\n",
-    "- Inference cost is exponential in treewidth, so try to write models with narrow treewidth.\n",
+    "- 推理复杂度对于树宽(treewidth)指数级增长，因此请尝试编写具有窄树宽的模型。\n",
     "- If you have trouble, ask for help on [forum.pyro.ai](https://forum.pyro.ai)!"
    ]
   },

@@ -482,7 +482,7 @@ div.rendered_html tbody tr:hover {
 <li><p><a class="reference external" href="#通用概率编程">通用概率编程</a></p></li>
 </ul>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -498,7 +498,7 @@ div.rendered_html tbody tr:hover {
 <p>初等随机函数(Primitive stochastic functions, or distributions) 是一类重要的随机函数，我们可以为其显式计算某个输入下得到某个输出的概率. As of PyTorch 0.4 and Pyro 0.2, Pyro uses PyTorch’s <a class="reference external" href="http://pytorch.org/docs/master/distributions.html">distribution library</a>. You can also create custom distributions using <a class="reference external" href="http://pytorch.org/docs/master/distributions.html#module-torch.distributions.transforms">transforms</a>.</p>
 <p>使用初等随机函数很简单. 例如, 我们可以使用如下代码从标准正态分布 <span class="math notranslate nohighlight">\(\mathcal{N}(0,1)\)</span> 抽取一个样本:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -516,8 +516,8 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-sample tensor(-0.8152)
-log prob tensor(-1.2512)
+sample tensor(-1.3905)
+log prob tensor(-1.8857)
 </pre></div></div>
 </div>
 <p>这里, <code class="docutils literal notranslate"><span class="pre">torch.distributions.Normal</span></code> 是 <code class="docutils literal notranslate"><span class="pre">Distribution</span></code> class 的一个实例 that takes parameters and provides <strong>sample and score methods</strong>. 因为 Pyro’s 的分布库 <code class="docutils literal notranslate"><span class="pre">pyro.distributions</span></code> 是 Pytorch 分布库 <code class="docutils literal notranslate"><span class="pre">torch.distributions</span></code> 的一个简单打包，所以我们可以在推断过程中利用 PyTorch’s 快速张量计算和自动微分的能力.</p>
@@ -527,7 +527,7 @@ log prob tensor(-1.2512)
 <p>所有的概率程序(probablistic programs)是通过初等随机函数和确定性计算组合得到的。我们最终的目的是要是用概率编程(probablistic programming)来模拟真实世界，我们现在从一个具体的例子出发。</p>
 <p>现在我们有一堆关于每天平均气温和是否阴天(cloud cover)的数据。我们想 reason about how temperature interacts with whether it was sunny or cloudy. 如下的简单随机函数描述了数据的生成过程：</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -537,14 +537,14 @@ log prob tensor(-1.2512)
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <img alt="_images/intro_part_i_9_0.svg" src="_images/intro_part_i_9_0.svg" /></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -566,14 +566,14 @@ log prob tensor(-1.2512)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-(&#39;sunny&#39;, 84.04940032958984)
+(&#39;cloudy&#39;, 46.847618103027344)
 </pre></div></div>
 </div>
 <p>让我们一行行的来看这段代码。 首先, 在第2行 we define a binary random variable ‘cloudy’, which is given by a draw from the Bernoulli distribution with a parameter of <code class="docutils literal notranslate"><span class="pre">0.3</span></code>. Since the Bernoulli distributions return <code class="docutils literal notranslate"><span class="pre">0</span></code>s or <code class="docutils literal notranslate"><span class="pre">1</span></code>s, 在第3行 we convert the value <code class="docutils literal notranslate"><span class="pre">cloudy</span></code> to a string so that return values of <code class="docutils literal notranslate"><span class="pre">weather</span></code> are easier to parse. So according to this model 30% of the time it’s cloudy and 70% of the time it’s sunny.</p>
 <p>在第4-5行 we define the parameters we’re going to use to sample the temperature in lines 6. These parameters depend on the particular value of <code class="docutils literal notranslate"><span class="pre">cloudy</span></code> we sampled in line 2. For example, the mean temperature is 55 degrees (Fahrenheit) on cloudy days and 75 degrees on sunny days. Finally we return the two values <code class="docutils literal notranslate"><span class="pre">cloudy</span></code> and <code class="docutils literal notranslate"><span class="pre">temp</span></code> in line 7.</p>
 <p>但是，这个函数 <code class="docutils literal notranslate"><span class="pre">weather</span></code> 完全与 Pyro 无关 - it only calls PyTorch. 我们需要将其转换为 Pyro 程序 if we want to use this model for anything other than sampling fake data. (那么，这个模型除生成假数据还应该能干嘛呢？我们希望 can be composed, reused, imported, and serialized.)</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -591,12 +591,46 @@ log prob tensor(-1.2512)
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-(&#39;sunny&#39;, 92.53456115722656)
+(&#39;cloudy&#39;, 53.20433807373047)
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># 打印每个样本点</span>
+<span class="kn">import</span> <span class="nn">pyro.distributions</span> <span class="k">as</span> <span class="nn">dist</span>
+<span class="kn">from</span> <span class="nn">pyro.poutine.trace_messenger</span> <span class="k">import</span> <span class="n">TraceMessenger</span>
+<span class="n">mu</span> <span class="o">=</span> <span class="mf">8.5</span>
+<span class="k">def</span> <span class="nf">scale_obs</span><span class="p">(</span><span class="n">mu</span><span class="p">):</span>
+    <span class="n">weight</span> <span class="o">=</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="mf">1.</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">pyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;measurement&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">weight</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">),</span> <span class="n">obs</span><span class="o">=</span><span class="mf">9.5</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">TraceMessenger</span><span class="p">()</span> <span class="k">as</span> <span class="n">tracer</span><span class="p">:</span>
+    <span class="n">scale_obs</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span>
+
+<span class="n">trace</span> <span class="o">=</span> <span class="n">tracer</span><span class="o">.</span><span class="n">trace</span>
+<span class="n">logp</span> <span class="o">=</span> <span class="mf">0.</span>
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">trace</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">node</span><span class="p">[</span><span class="s1">&#39;fn&#39;</span><span class="p">],</span> <span class="n">node</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">],</span> <span class="n">node</span><span class="p">[</span><span class="s1">&#39;is_observed&#39;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;sample&quot;</span><span class="p">:</span>
+        <span class="n">logp</span> <span class="o">=</span> <span class="n">logp</span> <span class="o">+</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;fn&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">node</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+weight Normal(loc: 8.5, scale: 1.0) tensor(9.1378) False
+measurement Normal(loc: 9.137797355651855, scale: 0.75) 9.5 True
 </pre></div></div>
 </div>
 </div>
@@ -836,7 +870,7 @@ tensor(-2.0794)
 </pre></div>
 </div>
 <div class="output_area docutils container">
-<img alt="_images/intro_part_i_30_0.svg" src="_images/intro_part_i_30_0.svg" /></div>
+<img alt="_images/intro_part_i_31_0.svg" src="_images/intro_part_i_31_0.svg" /></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[43]:
@@ -853,7 +887,7 @@ tensor(-2.0794)
 </pre></div>
 </div>
 <div class="output_area docutils container">
-<img alt="_images/intro_part_i_31_0.svg" src="_images/intro_part_i_31_0.svg" /></div>
+<img alt="_images/intro_part_i_32_0.svg" src="_images/intro_part_i_32_0.svg" /></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[44]:

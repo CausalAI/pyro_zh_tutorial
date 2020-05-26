@@ -484,13 +484,13 @@ div.rendered_html tbody tr:hover {
 <p>本教程讲解 Pyro 离散潜变量模型的枚举策略. 本教程假定读者已经熟悉 <a class="reference external" href="http://pyro.ai/examples/tensor_shapes.html">Tensor Shapes Tutorial</a>.</p>
 <p><strong>Summary</strong></p>
 <ul class="simple">
-<li><p>Pyro implements automatic enumeration over discrete latent variables.</p></li>
+<li><p>Pyro对离散的潜在变量实现自动枚举。</p></li>
 <li><p>This strategy can be used alone or inside SVI (via <a class="reference external" href="http://docs.pyro.ai/en/dev/inference_algos.html#pyro.infer.traceenum_elbo.TraceEnum_ELBO">TraceEnum_ELBO</a>), HMC, or NUTS.</p></li>
 <li><p>The standalone <a class="reference external" href="http://docs.pyro.ai/en/dev/inference_algos.html#pyro.infer.discrete.infer_discrete">infer_discrete</a> can generate samples or MAP estimates.</p></li>
 <li><p>Annotate a sample site <code class="docutils literal notranslate"><span class="pre">infer={&quot;enumerate&quot;:</span> <span class="pre">&quot;parallel&quot;}</span></code> to trigger enumeration.</p></li>
-<li><p>If a sample site determines downstream structure, instead use <code class="docutils literal notranslate"><span class="pre">{&quot;enumerate&quot;:</span> <span class="pre">&quot;sequential&quot;}</span></code>.</p></li>
+<li><p>如果样本点(sample site)确定下游结构，就使用 <code class="docutils literal notranslate"><span class="pre">{&quot;enumerate&quot;:</span> <span class="pre">&quot;sequential&quot;}</span></code>。</p></li>
 <li><p>Write your models to allow arbitrarily deep batching on the left, e.g. use broadcasting.</p></li>
-<li><p>Inference cost is exponential in treewidth, so try to write models with narrow treewidth.</p></li>
+<li><p>推理复杂度对于树宽(treewidth)指数级增长，因此请尝试编写具有窄树宽的模型。</p></li>
 <li><p>If you have trouble, ask for help on <a class="reference external" href="https://forum.pyro.ai">forum.pyro.ai</a>!</p></li>
 </ul>
 <div class="nbinput nblast docutils container">

@@ -51,7 +51,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 2,
+   "execution_count": 1,
    "metadata": {
     "Collapsed": "false"
    },
@@ -79,7 +79,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 4,
+   "execution_count": 2,
    "metadata": {
     "Collapsed": "false"
    },
@@ -88,8 +88,8 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "sample tensor(-0.8152)\n",
-      "log prob tensor(-1.2512)\n"
+      "sample tensor(-1.3905)\n",
+      "log prob tensor(-1.8857)\n"
      ]
     }
    ],
@@ -127,7 +127,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 17,
+   "execution_count": 3,
    "metadata": {
     "Collapsed": "false"
    },
@@ -168,10 +168,10 @@
        "</svg>\n"
       ],
       "text/plain": [
-       "<graphviz.files.Source at 0x12ee05d10>"
+       "<graphviz.files.Source at 0x12aea1b90>"
       ]
      },
-     "execution_count": 17,
+     "execution_count": 3,
      "metadata": {},
      "output_type": "execute_result"
     }
@@ -183,7 +183,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 18,
+   "execution_count": 4,
    "metadata": {
     "Collapsed": "false"
    },
@@ -192,7 +192,7 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "('sunny', 84.04940032958984)\n"
+      "('cloudy', 46.847618103027344)\n"
      ]
     }
    ],
@@ -225,7 +225,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 19,
+   "execution_count": 5,
    "metadata": {
     "Collapsed": "false"
    },
@@ -233,10 +233,10 @@
     {
      "data": {
       "text/plain": [
-       "('sunny', 92.53456115722656)"
+       "('cloudy', 53.20433807373047)"
       ]
      },
-     "execution_count": 19,
+     "execution_count": 5,
      "metadata": {},
      "output_type": "execute_result"
     }
@@ -252,6 +252,42 @@
     "    return cloudy, temp.item()\n",
     "\n",
     "weather()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {
+    "Collapsed": "false"
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "weight Normal(loc: 8.5, scale: 1.0) tensor(9.1378) False\n",
+      "measurement Normal(loc: 9.137797355651855, scale: 0.75) 9.5 True\n"
+     ]
+    }
+   ],
+   "source": [
+    "# 打印每个样本点\n",
+    "import pyro.distributions as dist\n",
+    "from pyro.poutine.trace_messenger import TraceMessenger\n",
+    "mu = 8.5\n",
+    "def scale_obs(mu):  \n",
+    "    weight = pyro.sample(\"weight\", dist.Normal(mu, 1.))\n",
+    "    return pyro.sample(\"measurement\", dist.Normal(weight, 0.75), obs=9.5)\n",
+    "\n",
+    "with TraceMessenger() as tracer:\n",
+    "    scale_obs(mu)\n",
+    "\n",
+    "trace = tracer.trace\n",
+    "logp = 0.\n",
+    "for name, node in trace.nodes.items():\n",
+    "    print(name, node['fn'], node['value'], node['is_observed'])\n",
+    "    if node[\"type\"] == \"sample\":\n",
+    "        logp = logp + node[\"fn\"].log_prob(node[\"value\"]).sum()"
    ]
   },
   {
